@@ -1,0 +1,1331 @@
+import tkinter as tk
+from tkinter import messagebox
+
+class törelmelikkurumbölümyerleştirici:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("törelmelik kurum bölüm yerleştiricisi")
+        self.current_soru = None
+        self.current_code = None
+        self.flowchart = None
+        
+        # Define flowcharts
+        self.flowcharts = {
+            "kaynak": self.kaynak_flowchart(),
+            "anlatım": self.anlatım_flowchart(),
+            "değer": self.değer_flowchart(),
+            "gösterimler": self.gösterimler_flowchart(),
+            "etkilenmeyenler": self.etkilenmeyenler_flowchart(),
+            "uygulayanlar": self.uygulayanlar_flowchart(),
+            "uyguraçları": self.uyguraçları_flowchart(),
+            "tekrarlayanlar": self.tekrarlayanlar_flowchart(),
+            "onaylamayanlar": self.onaylamayanlar_flowchart(),
+            "onaylayanlar": self.onaylayanlar_flowchart()
+        }
+        
+        # Create main frame
+        self.main_frame = tk.Frame(self.root)
+        self.main_frame.pack(padx=20, pady=20)
+        
+        # Create selection screen
+        self.create_selection_screen()
+    
+    def create_selection_screen(self):
+        # Clear main frame
+        for widget in self.main_frame.winfo_children():
+            widget.destroy()
+            
+        tk.Label(self.main_frame, text="törelmelik yöntem seçin", font=("Arial", 14)).pack(pady=10)
+        
+        for flowchart_name in self.flowcharts.keys():
+            tk.Button(self.main_frame, text=flowchart_name, 
+                     command=lambda name=flowchart_name: self.start_flowchart(name)).pack(pady=5)
+    
+    def start_flowchart(self, flowchart_name):
+        self.flowchart = flowchart_name
+        self.current_code = None
+        self.current_soru = list(self.flowcharts[flowchart_name].keys())[0]
+        self.show_soru()
+    
+    def show_soru(self):
+        # Clear main frame
+        for widget in self.main_frame.winfo_children():
+            widget.destroy()
+            
+        if self.current_soru is None:
+            self.create_selection_screen()
+            return
+            
+        soru_data = self.flowcharts[self.flowchart][self.current_soru]
+        soru_text = soru_data["text"]
+        seçenekler = soru_data["seçenekler"]
+        
+        tk.Label(self.main_frame, text=soru_text, font=("Arial", 14)).pack(pady=10)
+        
+        # Create buttons for seçenekler
+        for option, next_step in seçenekler.items():
+            tk.Button(self.main_frame, text=option, 
+                     command=lambda opt=option, step=next_step: self.handle_choice(opt, step)).pack(pady=5)
+        
+        # Back button
+        tk.Button(self.main_frame, text="seçimelere geri dön", 
+                 command=self.create_selection_screen).pack(pady=10)
+    
+    def handle_choice(self, option, next_step):
+        # Update current code
+        if self.current_code is None:
+            self.current_code = next_step["code"]
+        else:
+            self.current_code = next_step["code"]
+            
+        if next_step["type"] == "soru":
+            self.current_soru = next_step["next"]
+            self.show_soru()
+        else:
+            messagebox.showinfo("Result", next_step["result"])
+            self.current_soru = None
+            self.show_soru()
+    
+    def kaynak_flowchart(self):
+        return {
+            "S1": {
+                "text": "kn?",
+                "seçenekler": {
+                    "olumlu": {"code": "KN01", "type": "soru", "next": "S2"},
+                    "Olumsuz": {"code": None, "type": "son", "next": None}
+                }
+            },
+            "S2": {
+                "text": "iç yoksa dş?",
+                "seçenekler": {
+                    "iç": {"code": "KN02", "type": "soru", "next": "S3a"},
+                    "dş": {"code": "KN03", "type": "soru", "next": "S3b"}
+                }
+            },
+            "S3a": {
+                "text": "bl yoksa bm?",
+                "seçenekler": {
+                    "bl": {"code": "KN04", "type": "soru", "next": "S4a"},
+                    "bm": {"code": "KN05", "type": "soru", "next": "S4b"}
+                }
+            },
+            "S3b": {
+                "text": "yl yoksa yz?",
+                "seçenekler": {
+                    "yl": {"code": "KN06", "type": "soru", "next": "S4c"},
+                    "yz": {"code": "KN07", "type": "soru", "next": "S4d"}
+                }
+            },
+            "S4a": {
+                "text": "ul yoksa uz?",
+                "seçenekler": {
+                    "ul": {"code": "KN09", "type": "soru", "next": "S5b"},
+                    "uz": {"code": "KN08", "type": "soru", "next": "S5a"}
+                }
+            },
+            "S4b": {
+                "text": "tl yoksa tz?",
+                "seçenekler": {
+                    "tl": {"code": "KN10", "type": "soru", "next": "S5c"},
+                    "tz": {"code": "KN11", "type": "son", "result": "araştırdığınız kaynak bir varlığın töresiz başlatılmayan içsel ilkesidir: KN11."}
+                }
+            },
+            "S4c": {
+                "text": "tl yoksa tz?",
+                "seçenekler": {
+                    "tl": {"code": "KN12", "type": "soru", "next": "S5d"},
+                    "tz": {"code": "KN13", "type": "son", "result": "araştırdığınız kaynak bir töresiz yetkili dışsal kaynaktır: KN13."}
+                }
+            },
+            "S4d": {
+                "text": "tl yoksa tz?",
+                "seçenekler": {
+                    "tl": {"code": "KN14", "type": "soru", "next": "S5e"},
+                    "tz": {"code": "KN15", "type": "son", "result": "araştırdığınız kaynak bir töresiz yetkisizli dışsal kaynaktır: KN15."}
+                }
+            },
+            "S5a": {
+                "text": "tl yoksa tz?",
+                "seçenekler": {
+                    "tl": {"code": "KN16", "type": "soru", "next": "S6a"},
+                    "tz": {"code": "KN17", "type": "son", "result": "araştırdığınız kaynak bir evrenin töresiz uyanıklıksız başlatılan içsel kuraldır: KN17."}
+                }
+            },
+            "S5b": {
+                "text": "tl yoksa tz?",
+                "seçenekler": {
+                    "tl": {"code": "KN18", "type": "soru", "next": "S6b"},
+                    "tz": {"code": "KN19", "type": "son", "result": "araştırdığınız kaynak bir evrenin töresiz uyanıklı başlatılan içsel kuraldır: KN19."}
+                }
+            },
+            "S5c": {
+                "text": "un yoksa um?",
+                "seçenekler": {
+                    "un": {"code": "KN20", "type": "soru", "next": "S6c"},
+                    "um": {"code": "KN21", "type": "soru", "next": "S6d"}
+                }
+            },
+            "S5d": {
+                "text": "ka yoksa öz?",
+                "seçenekler": {
+                    "ka": {"code": "KN22", "type": "soru", "next": "S6f"},
+                    "öz": {"code": "KN23", "type": "soru", "next": "S6e"}
+                }
+            },
+            "S5e": {
+                "text": "ka yoksa öz?",
+                "seçenekler": {
+                    "ka": {"code": "KN24", "type": "soru", "next": "S6h"},
+                    "öz": {"code": "KN25", "type": "soru", "next": "S6g"}
+                }
+            },
+            "S6a": {
+                "text": "un yoksa um?",
+                "seçenekler": {
+                    "un": {"code": "KN26", "type": "soru", "next": "S7a"},
+                    "um": {"code": "KN27", "type": "soru", "next": "S7b"}
+                }
+            },
+            "S6b": {
+                "text": "un yoksa um?",
+                "seçenekler": {
+                    "öm": {"code": "KN28", "type": "soru", "next": "S7c"},
+                    "um": {"code": "KN29", "type": "soru", "next": "S7d"}
+                }
+            },
+            "S6c": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "KN30", "type": "son", "result": "araştırdığınız kaynak bir varlığın özellikle kaynaklayan uygulanan töreli başlatılmayan içsel ilkesidir: KN30."},
+                    "öm": {"code": "KN31", "type": "son", "result": "araştırdığınız kaynak bir varlığın özellikle kaynaklamayan uygulanan töreli başlatılmayan içsel ilkesidir: KN31."}
+                }
+            },
+            "S6d": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "KN32", "type": "son", "result": "araştırdığınız kaynak bir varlığın özellikle kaynaklayan uygulanmayan töreli başlatılmayan içsel ilkesidir: KN32."},
+                    "un": {"code": "KN33", "type": "son", "result": "araştırdığınız kaynak bir varlığın özellikle kaynaklamayan uygulanmayan töreli başlatılmayan içsel ilkesidir: KN33."}
+                }
+            },
+            "S6e": {
+                "text": "un yoksa um?",
+                "seçenekler": {
+                    "un": {"code": "KN34", "type": "soru", "next": "S7e"},
+                    "um": {"code": "KN35", "type": "soru", "next": "S7f"}
+                }
+            },
+            "S6f": {
+                "text": "un yoksa um?",
+                "seçenekler": {
+                    "un": {"code": "KN36", "type": "soru", "next": "S7g"},
+                    "um": {"code": "KN37", "type": "soru", "next": "S7h"}
+                }
+            },
+            "S6g": {
+                "text": "un yoksa um?",
+                "seçenekler": {
+                    "un": {"code": "KN38", "type": "soru", "next": "S7i"},
+                    "um": {"code": "KN39", "type": "soru", "next": "S7j"}
+                }
+            },
+            "S6h": {
+                "text": "un yoksa um?",
+                "seçenekler": {
+                    "öm": {"code": "KN40", "type": "soru", "next": "S7k"},
+                    "um": {"code": "KN41", "type": "soru", "next": "S7l"}
+                }
+            },
+            "S7a": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "KN42", "type": "son", "result": "araştırdığınız kaynak bir evrenin özellikle kaynaklayan uygulanan töreli uyanıklıksız başlatılan içsel kuraldır: KN42."},
+                    "öm": {"code": "KN43", "type": "son", "result": "araştırdığınız kaynak bir evrenin özellikle kaynaklamayan uygulanan töreli uyanıklıksız başlatılan içsel kuraldır: KN43."}
+                }
+            },
+            "S7b": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "KN44", "type": "son", "result": "araştırdığınız kaynak bir evrenin özellikle kaynaklayan uygulanmayan töreli uyanıklıksız başlatılan içsel kuraldır: KN44."},
+                    "öm": {"code": "KN45", "type": "son", "result": "araştırdığınız kaynak bir evrenin özellikle kaynaklamayan uygulanmayan töreli uyanıklıksız başlatılan içsel kuraldır: KN45."}
+                }
+            },
+            "S7c": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "KN46", "type": "son", "result": "araştırdığınız kaynak bir evrenin özellikle kaynaklayan uygulanan töreli uyanıklı başlatılan içsel kuraldır: KN46."},
+                    "öm": {"code": "KN47", "type": "son", "result": "araştırdığınız kaynak bir evrenin özellikle kaynaklamayan uygulanan töreli uyanıklı başlatılan içsel kuraldır: KN47."}
+                }
+            },
+            "S7d": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "KN48", "type": "son", "result": "araştırdığınız kaynak bir evrenin özellikle kaynaklayan uygulanmayan töreli uyanıklı başlatılan içsel kuraldır: KN48."},
+                    "öm": {"code": "KN49", "type": "son", "result": "araştırdığınız kaynak bir evrenin özellikle kaynaklamayan uygulanmayan töreli uyanıklı başlatılan içsel kuraldır: KN49."}
+                }
+            },
+            "S7e": {
+                "text": "id yoksa dd?",
+                "seçenekler": {
+                    "id": {"code": "KN51", "type": "son", "result": "araştırdığınız kaynak bir içe doğru belirleyen uygulayan kanel töreli yetkili dışsal kaynaktır: KN51."},
+                    "dd": {"code": "KN50", "type": "soru", "next": "S8a"}
+                }
+            },
+            "S7f": {
+                "text": "id yoksa dd?",
+                "seçenekler": {
+                    "id": {"code": "KN53", "type": "son", "result": "araştırdığınız kaynak bir içe doğru belirleyen uygulamayan kanel töreli yetkili dışsal kaynaktır: KN53."},
+                    "dd": {"code": "KN52", "type": "soru", "next": "S8b"}
+                }
+            },
+            "S7g": {
+                "text": "id yoksa dd?",
+                "seçenekler": {
+                    "id": {"code": "KN55", "type": "son", "result": "araştırdığınız kaynak bir içe doğru belirleyen uygulayan öznel töreli yetkili dışsal kaynaktır: KN55."},
+                    "dd": {"code": "KN54", "type": "soru", "next": "S8c"}
+                }
+            },
+            "S7h": {
+                "text": "id yoksa dd?",
+                "seçenekler": {
+                    "id": {"code": "KN57", "type": "son", "result": "araştırdığınız kaynak bir içe doğru belirleyen uygulamayan öznel töreli yetkili dışsal kaynaktır: KN57."},
+                    "dd": {"code": "KN56", "type": "soru", "next": "S8d"}
+                }
+            },
+            "S7i": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "KN58", "type": "son", "result": "araştırdığınız kaynak bir özellikle kaynaklayan uygulayan kanel töreli yetkisizli dışsal kaynaktır: KN58."},
+                    "öm": {"code": "KN59", "type": "son", "result": "araştırdığınız kaynak bir özellikle kaynaklamayan uygulayan kanel töreli yetkisizli dışsal kaynaktır: KN59."}
+                }
+            },
+            "S7j": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "KN60", "type": "son", "result": "araştırdığınız kaynak bir özellikle kaynaklayan uygulamayan kanel töreli yetkisizli dışsal kaynaktır: KN60."},
+                    "öm": {"code": "KN61", "type": "son", "result": "araştırdığınız kaynak bir özellikle kaynaklamayan uygulamayan kanel töreli yetkisizli dışsal kaynaktır: KN61."}
+                }
+            },
+            "S7k": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "KN62", "type": "son", "result": "araştırdığınız kaynak bir özellikle kaynaklayan uygulayan öznel töreli yetkisizli dışsal kaynaktır: KN62."},
+                    "öm": {"code": "KN63", "type": "son", "result": "araştırdığınız kaynak bir özellikle kaynaklamayan uygulayan öznel töreli yetkisizli dışsal kaynaktır: KN63."}
+                }
+            },
+            "S7l": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "KN64", "type": "son", "result": "araştırdığınız kaynak bir özellikle kaynaklayan uygulamayan  öznel töreli yetkisizli dışsal kaynaktır: KN64."},
+                    "öm": {"code": "KN65", "type": "son", "result": "araştırdığınız kaynak bir özellikle kaynaklamayan uygulamayan öznel töreli yetkisizli dışsal kaynaktır: KN65."}
+                }
+            },
+            "S8a": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "KN66", "type": "son", "result": "araştırdığınız kaynak bir özellikle kaynaklayan dışa doğru belirleyen uygulayan kanel töreli yetkili dışsal kaynaktır: KN66."},
+                    "öm": {"code": "KN67", "type": "son", "result": "araştırdığınız kaynak bir özellikle kaynaklamayan dışa doğru belirleyen uygulayan kanel töreli yetkili dışsal kaynaktır: KN67."}
+                }
+            },
+            "S8b": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "KN68", "type": "son", "result": "araştırdığınız kaynak bir özellikle kaynaklayan dışa doğru belirleyen uygulamayan kanel töreli yetkili dışsal kaynaktır: KN68."},
+                    "öm": {"code": "KN69", "type": "son", "result": "araştırdığınız kaynak bir özellikle kaynaklamayan dışa doğru belirleyen uygulamayan kanel töreli yetkili dışsal kaynaktır: KN69."}
+                }
+            },
+            "S8c": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "KN70", "type": "son", "result": "araştırdığınız kaynak bir özellikle kaynaklayan dışa doğru belirleyen uygulayan öznel töreli yetkili dışsal kaynaktır: KN70."},
+                    "öm": {"code": "KN71", "type": "son", "result": "araştırdığınız kaynak bir özellikle kaynaklamayan dışa doğru belirleyen uygulayan öznel töreli yetkili dışsal kaynaktır: KN71."}
+                }
+            },
+            "S8d": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "KN72", "type": "son", "result": "araştırdığınız kaynak bir özellikle kaynaklayan dışa doğru belirleyen uygulamayan öznel töreli yetkili dışsal kaynaktır: KN72."},
+                    "öm": {"code": "KN73", "type": "son", "result": "araştırdığınız kaynak bir özellikle kaynaklamayan dışa doğru belirleyen uygulamayan öznel töreli yetkili dışsal kaynaktır: KN73."}
+                }
+            }
+        }
+    
+    def anlatım_flowchart(self):
+        return {
+            "S1": {
+                "text": "at?",
+                "seçenekler": {
+                    "olumlu": {"code": "AT01", "type": "soru", "next": "S2"},
+                    "Olumsuz": {"code": None, "type": "son", "next": None}
+                }
+            },
+            "S2": {
+                "text": "iç yoksa dş?",
+                "seçenekler": {
+                    "iç": {"code": "AT02", "type": "soru", "next": "S3a"},
+                    "dş": {"code": "AT03", "type": "soru", "next": "S3b"}
+                }
+            },
+            "S3a": {
+                "text": "bl yoksa bm?",
+                "seçenekler": {
+                    "bl": {"code": "AT04", "type": "soru", "next": "S4a"},
+                    "bm": {"code": "AT05", "type": "soru", "next": "S4b"}
+                }
+            },
+            "S3b": {
+                "text": "yl yoksa yz?",
+                "seçenekler": {
+                    "yl": {"code": "AT06", "type": "soru", "next": "S4c"},
+                    "yz": {"code": "AT07", "type": "soru", "next": "S4d"}
+                }
+            },
+            "S4a": {
+                "text": "ul yoksa uz?",
+                "seçenekler": {
+                    "ul": {"code": "AT09", "type": "soru", "next": "S5b"},
+                    "uz": {"code": "AT08", "type": "soru", "next": "S5a"}
+                }
+            },
+            "S4b": {
+                "text": "tl yoksa tz?",
+                "seçenekler": {
+                    "tl": {"code": "AT10", "type": "soru", "next": "S5c"},
+                    "tz": {"code": "AT11", "type": "son", "result": "araştırdığınız anlatım bir töresiz başlatılmayan içsel anlatımdır: AT11."}
+                }
+            },
+            "S4c": {
+                "text": "tl, to yoksa tz?",
+                "seçenekler": {
+                    "tl": {"code": "AT13", "type": "soru", "next": "S5d"},
+                    "nm": {"code": "AT12", "type": "son", "result": "araştırdığınız anlatım bir töreli-olmayan yetkili dışsal anlatımdır: AT12."},
+                    "tz": {"code": "AT14", "type": "son", "result": "araştırdığınız anlatım bir töresiz yetkili dışsal anlatımdır: AT14."}
+                }
+            },
+            "S4d": {
+                "text": "tl yoksa tz?",
+                "seçenekler": {
+                    "tl": {"code": "AT15", "type": "soru", "next": "S5e"},
+                    "tz": {"code": "AT16", "type": "son", "result": "araştırdığınız anlatım bir töresiz yetkisizli dışsal anlatımdır: AT16."}
+                }
+            },
+            "S5a": {
+                "text": "tl yoksa tz?",
+                "seçenekler": {
+                    "tl": {"code": "AT17", "type": "soru", "next": "S6a"},
+                    "tz": {"code": "AT18", "type": "son", "result": "araştırdığınız anlatım bir töresiz uyanıklıksız başlatılan içsel anlatımdır: AT18."}
+                }
+            },
+            "S5b": {
+                "text": "tl yoksa tz?",
+                "seçenekler": {
+                    "tl": {"code": "AT19", "type": "soru", "next": "S6b"},
+                    "tz": {"code": "AT20", "type": "son", "result": "araştırdığınız anlatım bir töresiz uyanıklı başlatılan içsel anlatımdır: AT20."}
+                }
+            },
+            "S5c": {
+                "text": "un yoksa um?",
+                "seçenekler": {
+                    "un": {"code": "AT21", "type": "soru", "next": "S6c"},
+                    "um": {"code": "AT22", "type": "soru", "next": "S6d"}
+                }
+            },
+            "S5d": {
+                "text": "ka yoksa öz?",
+                "seçenekler": {
+                    "ka": {"code": "AT23", "type": "soru", "next": "S6f"},
+                    "öz": {"code": "AT24", "type": "soru", "next": "S6e"}
+                }
+            },
+            "S5e": {
+                "text": "ka yoksa öz?",
+                "seçenekler": {
+                    "ka": {"code": "AT25", "type": "soru", "next": "S6h"},
+                    "öz": {"code": "AT26", "type": "soru", "next": "S6g"}
+                }
+            },
+            "S6a": {
+                "text": "un yoksa um?",
+                "seçenekler": {
+                    "un": {"code": "AT27", "type": "soru", "next": "S7a"},
+                    "um": {"code": "AT28", "type": "soru", "next": "S7b"}
+                }
+            },
+            "S6b": {
+                "text": "un yoksa um?",
+                "seçenekler": {
+                    "un": {"code": "AT29", "type": "soru", "next": "S7c"},
+                    "um": {"code": "AT30", "type": "soru", "next": "S7d"}
+                }
+            },
+            "S6c": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "AT31", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanan uygulanan töreli başlatılmayan içsel anlatımdır: AT31."},
+                    "öm": {"code": "AT32", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanmayan uygulanan töreli başlatılmayan içsel anlatımdır: AT32."}
+                }
+            },
+            "S6d": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "AT33", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanan uygulanmayan töreli başlatılmayan içsel anlatımdır: AT33."},
+                    "öm": {"code": "AT34", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanmayan uygulanmayan töreli başlatılmayan içsel anlatımdır: AT34."}
+                }
+            },
+            "S6e": {
+                "text": "un yoksa um?",
+                "seçenekler": {
+                    "un": {"code": "AT35", "type": "soru", "next": "S7e"},
+                    "um": {"code": "AT36", "type": "soru", "next": "S7f"}
+                }
+            },
+            "S6f": {
+                "text": "un yoksa um?",
+                "seçenekler": {
+                    "un": {"code": "AT37", "type": "soru", "next": "S7g"},
+                    "um": {"code": "AT38", "type": "soru", "next": "S7h"}
+                }
+            },
+            "S6g": {
+                "text": "un yoksa um?",
+                "seçenekler": {
+                    "un": {"code": "AT39", "type": "soru", "next": "S7i"},
+                    "um": {"code": "AT40", "type": "soru", "next": "S7j"}
+                }
+            },
+            "S6h": {
+                "text": "un yoksa um?",
+                "seçenekler": {
+                    "un": {"code": "AT41", "type": "soru", "next": "S7k"},
+                    "um": {"code": "AT42", "type": "soru", "next": "S7l"}
+                }
+            },
+            "S7a": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "AT43", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanan uygulanan töreli uyanıklıksız başlatılan içsel anlatımdır: AT43."},
+                    "öm": {"code": "AT44", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanmayan uygulanan töreli uyanıklıksız başlatılan içsel anlatımdır: AT44."}
+                }
+            },
+            "S7b": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "AT45", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanan uygulanmayan töreli uyanıklıksız başlatılan içsel anlatımdır: AT45."},
+                    "öm": {"code": "AT46", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanmayan uygulanmayan töreli uyanıklıksız başlatılan içsel anlatımdır: AT46."}
+                }
+            },
+            "S7c": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "AT47", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanan uygulanan töreli uyanıklı başlatılan içsel anlatımdır: AT47."},
+                    "öm": {"code": "AT48", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanmayan uygulanan töreli uyanıklı başlatılan içsel anlatımdır: AT48."}
+                }
+            },
+            "S7d": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "AT49", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanan uygulanmayan töreli uyanıklı başlatılan içsel anlatımdır: AT49."},
+                    "öm": {"code": "AT50", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanmayan uygulanmayan töreli uyanıklı başlatılan içsel anlatımdır: AT50."}
+                }
+            },
+            "S7e": {
+                "text": "id yoksa dd?",
+                "seçenekler": {
+                    "id": {"code": "AT52", "type": "son", "result": "araştırdığınız anlatım bir içe doğru belirlenen uygulanan kanel töreli yetkili dışsal anlatımdır: AT52."},
+                    "dd": {"code": "AT51", "type": "soru", "next": "S8a"}
+                }
+            },
+            "S7f": {
+                "text": "id yoksa dd?",
+                "seçenekler": {
+                    "id": {"code": "AT54", "type": "son", "result": "araştırdığınız anlatım bir içe doğru belirlenen uygulanmayan kanel töreli yetkili dışsal anlatımdır: AT54."},
+                    "dd": {"code": "AT53", "type": "soru", "next": "S8b"}
+                }
+            },
+            "S7g": {
+                "text": "id yoksa dd?",
+                "seçenekler": {
+                    "id": {"code": "AT56", "type": "son", "result": "araştırdığınız anlatım bir içe doğru belirlenen uygulanan öznel töreli yetkili dışsal anlatımdır: AT56."},
+                    "dd": {"code": "AT55", "type": "soru", "next": "S8c"}
+                }
+            },
+            "S7h": {
+                "text": "id yoksa dd?",
+                "seçenekler": {
+                    "id": {"code": "AT58", "type": "son", "result": "araştırdığınız anlatım bir içe doğru belirlenen uygulanmayan öznel töreli yetkili dışsal anlatımdır: AT58."},
+                    "dd": {"code": "AT57", "type": "soru", "next": "S8d"}
+                }
+            },
+            "S7i": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "AT59", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanan uygulanan kanel töreli yetkisizli dışsal anlatımdır: AT59."},
+                    "öm": {"code": "AT60", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanmayan uygulanan kanel töreli yetkisizli dışsal anlatımdır: AT60."}
+                }
+            },
+            "S7j": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "AT61", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanan uygulanmayan kanel töreli yetkisizli dışsal anlatımdır: AT61."},
+                    "öm": {"code": "AT62", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanmayan uygulanmayan kanel töreli yetkisizli dışsal anlatımdır: AT62."}
+                }
+            },
+            "S7k": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "AT63", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanan uygulanan öznel töreli yetkisizli dışsal anlatımdır: AT63."},
+                    "öm": {"code": "AT64", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanmayan uygulanan öznel töreli yetkisizli dışsal anlatımdır: AT64."}
+                }
+            },
+            "S7l": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "AT65", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanan uygulanan öznel töreli yetkisizli dışsal anlatımdır: AT65."},
+                    "öm": {"code": "AT66", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanmayan uygulanan öznel töreli yetkisizli dışsal anlatımdır: AT66."}
+                }
+            },
+            "S8a": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "AT67", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanan dışa doğru belirlenen uygulanan kanel töreli yetkili dışsal anlatımdır: AT67."},
+                    "öm": {"code": "AT68", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanmayan dışa doğru belirlenen uygulanan kanel töreli yetkili dışsal anlatımdır: AT68."}
+                }
+            },
+            "S8b": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "AT69", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanan dışa doğru belirlenen uygulanmayan kanel töreli yetkili dışsal anlatımdır: AT69."},
+                    "öm": {"code": "AT70", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanmayan dışa doğru belirlenen uygulanmayan kanel töreli yetkili dışsal anlatımdır: AT70."}
+                }
+            },
+            "S8c": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "AT71", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanan dışa doğru belirlenen uygulanan öznel töreli yetkili dışsal anlatımdır: AT71."},
+                    "öm": {"code": "AT72", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanmayan dışa doğru belirlenen uygulanan öznel töreli yetkili dışsal anlatımdır: AT72."}
+                }
+            },
+            "S8d": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "AT73", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanan dışa doğru belirlenen uygulanmayan öznel töreli yetkili dışsal anlatımdır: AT73."},
+                    "öm": {"code": "AT74", "type": "son", "result": "araştırdığınız anlatım bir özellikle kaynaklanmayan dışa doğru belirlenen uygulanmayan öznel töreli yetkili dışsal anlatımdır: AT74."}
+                }
+            }
+        }
+    
+    def değer_flowchart(self):
+        return {
+            "S1": {
+                "text": "vl?",
+                "seçenekler": {
+                    "olumlu": {"code": "DR01", "type": "soru", "next": "S2"},
+                    "Olumsuz": {"code": None, "type": "son", "next": None}
+                }
+            },
+            "S2": {
+                "text": "iç yoksa dş?",
+                "seçenekler": {
+                    "iç": {"code": "DR02", "type": "soru", "next": "S3a"},
+                    "dş": {"code": "DR03", "type": "soru", "next": "S3b"}
+                }
+            },
+            "S3a": {
+                "text": "bl yoksa bm?",
+                "seçenekler": {
+                    "bl": {"code": "DR04", "type": "soru", "next": "S4a"},
+                    "bm": {"code": "DR05", "type": "soru", "next": "S4b"}
+                }
+            },
+            "S3b": {
+                "text": "yl yoksa yz?",
+                "seçenekler": {
+                    "yl": {"code": "DR06", "type": "soru", "next": "S4c"},
+                    "yz": {"code": "DR07", "type": "soru", "next": "S4d"}
+                }
+            },
+            "S4a": {
+                "text": "ul yoksa uz?",
+                "seçenekler": {
+                    "ul": {"code": "DR09", "type": "soru", "next": "S5b"},
+                    "uz": {"code": "DR08", "type": "soru", "next": "S5a"}
+                }
+            },
+            "S4b": {
+                "text": "tl yoksa tz?",
+                "seçenekler": {
+                    "tl": {"code": "DR10", "type": "soru", "next": "S5c"},
+                    "tz": {"code": "DR11", "type": "son", "result": "araştırdığınız değer bir töresiz başlatılmayan içsel değerdir: DR11."}
+                }
+            },
+            "S4c": {
+                "text": "tl, to yoksa tz?",
+                "seçenekler": {
+                    "tl": {"code": "DR13", "type": "soru", "next": "S5d"},
+                    "nm": {"code": "DR12", "type": "son", "result": "araştırdığınız değer bir töreli-olmayan yetkili dışsal değerdir: DR12."},
+                    "tz": {"code": "DR14", "type": "son", "result": "araştırdığınız değer bir töresiz yetkili dışsal değerdir: DR14."}
+                }
+            },
+            "S4d": {
+                "text": "tl yoksa tz?",
+                "seçenekler": {
+                    "tl": {"code": "DR15", "type": "soru", "next": "S5e"},
+                    "tz": {"code": "DR16", "type": "son", "result": "araştırdığınız değer bir töresiz yetkisizli dışsal değerdir: DR16."}
+                }
+            },
+            "S5a": {
+                "text": "tl yoksa tz?",
+                "seçenekler": {
+                    "tl": {"code": "DR17", "type": "soru", "next": "S6a"},
+                    "tz": {"code": "DR18", "type": "son", "result": "araştırdığınız değer bir töresiz uyanıklıksız başlatılan içsel değerdir: DR18."}
+                }
+            },
+            "S5b": {
+                "text": "tl yoksa tz?",
+                "seçenekler": {
+                    "tl": {"code": "DR19", "type": "soru", "next": "S6b"},
+                    "tz": {"code": "DR20", "type": "son", "result": "araştırdığınız değer bir töresiz uyanıklı başlatılan içsel değerdir: VL20."}
+                }
+            },
+            "S5c": {
+                "text": "un yoksa um?",
+                "seçenekler": {
+                    "un": {"code": "VL21", "type": "soru", "next": "S6c"},
+                    "um": {"code": "VL22", "type": "soru", "next": "S6d"}
+                }
+            },
+            "S5d": {
+                "text": "ka yoksa öz?",
+                "seçenekler": {
+                    "ka": {"code": "VL23", "type": "soru", "next": "S6f"},
+                    "öz": {"code": "VL24", "type": "soru", "next": "S6e"}
+                }
+            },
+            "S5e": {
+                "text": "ka yoksa öz?",
+                "seçenekler": {
+                    "ka": {"code": "VL25", "type": "soru", "next": "S6h"},
+                    "öz": {"code": "VL26", "type": "soru", "next": "S6g"}
+                }
+            },
+            "S6a": {
+                "text": "un yoksa um?",
+                "seçenekler": {
+                    "un": {"code": "VL27", "type": "soru", "next": "S7a"},
+                    "um": {"code": "VL28", "type": "soru", "next": "S7b"}
+                }
+            },
+            "S6b": {
+                "text": "un yoksa um?",
+                "seçenekler": {
+                    "un": {"code": "VL29", "type": "soru", "next": "S7c"},
+                    "um": {"code": "DR30", "type": "soru", "next": "S7d"}
+                }
+            },
+            "S6c": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "DR31", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanan uygulanan töreli başlatılmayan içsel değerdir: DR31."},
+                    "öm": {"code": "DR32", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanmayan uygulanan töreli başlatılmayan içsel değerdir: DR32."}
+                }
+            },
+            "S6d": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "DR33", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanan uygulanmayan töreli başlatılmayan içsel değerdir: DR33."},
+                    "öm": {"code": "DR34", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanmayan uygulanmayan töreli başlatılmayan içsel değerdir: DR34."}
+                }
+            },
+            "S6e": {
+                "text": "un yoksa um?",
+                "seçenekler": {
+                    "un": {"code": "DR35", "type": "soru", "next": "S7e"},
+                    "um": {"code": "DR36", "type": "soru", "next": "S7f"}
+                }
+            },
+            "S6f": {
+                "text": "un yoksa um?",
+                "seçenekler": {
+                    "un": {"code": "DR37", "type": "soru", "next": "S7g"},
+                    "um": {"code": "DR38", "type": "soru", "next": "S7h"}
+                }
+            },
+            "S6g": {
+                "text": "un yoksa um?",
+                "seçenekler": {
+                    "un": {"code": "DR39", "type": "soru", "next": "S7i"},
+                    "um": {"code": "DR40", "type": "soru", "next": "S7j"}
+                }
+            },
+            "S6h": {
+                "text": "un yoksa um?",
+                "seçenekler": {
+                    "un": {"code": "DR41", "type": "soru", "next": "S7k"},
+                    "um": {"code": "DR42", "type": "soru", "next": "S7l"}
+                }
+            },
+            "S7a": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "DR43", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanan uygulanan töreli uyanıklıksız başlatılan içsel değerdir: DR43."},
+                    "öm": {"code": "DR44", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanmayan uygulanan töreli uyanıklıksız başlatılan içsel değerdir: DR44."}
+                }
+            },
+            "S7b": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "DR45", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanan uygulanmayan töreli uyanıklıksız başlatılan içsel değerdir: DR45."},
+                    "öm": {"code": "DR46", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanmayan uygulanmayan töreli uyanıklıksız başlatılan içsel değerdir: DR46."}
+                }
+            },
+            "S7c": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "DR47", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanan uygulanan töreli uyanıklı başlatılan içsel değerdir: DR47."},
+                    "öm": {"code": "DR48", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanmayan uygulanan töreli uyanıklı başlatılan içsel değerdir: DR48."}
+                }
+            },
+            "S7d": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "DR49", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanan uygulanmayan töreli uyanıklı başlatılan içsel değerdir: DR49."},
+                    "öm": {"code": "DR50", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanmayan uygulanmayan töreli uyanıklı başlatılan içsel değerdir: DR50."}
+                }
+            },
+            "S7e": {
+                "text": "id yoksa dd?",
+                "seçenekler": {
+                    "id": {"code": "DR52", "type": "son", "result": "araştırdığınız değer bir içe doğru belirlenen uygulanan kanel töreli yetkili dışsal değerdir: DR52."},
+                    "dd": {"code": "DR51", "type": "soru", "next": "S8a"}
+                }
+            },
+            "S7f": {
+                "text": "id yoksa dd?",
+                "seçenekler": {
+                    "id": {"code": "DR54", "type": "son", "result": "araştırdığınız değer bir içe doğru belirlenen uygulanmayan kanel töreli yetkili dışsal değerdir: DR54."},
+                    "dd": {"code": "DR53", "type": "soru", "next": "S8b"}
+                }
+            },
+            "S7g": {
+                "text": "id yoksa dd?",
+                "seçenekler": {
+                    "id": {"code": "DR56", "type": "son", "result": "araştırdığınız değer bir içe doğru belirlenen uygulanan öznel töreli yetkili dışsal değerdir: DR56."},
+                    "dd": {"code": "DR55", "type": "soru", "next": "S8c"}
+                }
+            },
+            "S7h": {
+                "text": "id yoksa dd?",
+                "seçenekler": {
+                    "id": {"code": "DR58", "type": "son", "result": "araştırdığınız değer bir içe doğru belirlenen uygulanmayan öznel töreli yetkili dışsal değerdir: DR58."},
+                    "dd": {"code": "DR57", "type": "soru", "next": "S8d"}
+                }
+            },
+            "S7i": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "DR59", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanan uygulanan kanel töreli yetkisizli dışsal değerdir: DR59."},
+                    "öm": {"code": "DR60", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanmayan uygulanan kanel töreli yetkisizli dışsal değerdir: DR60."}
+                }
+            },
+            "S7j": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "DR61", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanan uygulanmayan kanel töreli yetkisizli dışsal değerdir: DR61."},
+                    "öm": {"code": "DR62", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanmayan uygulanmayan kanel töreli yetkisizli dışsal değerdir: DR62."}
+                }
+            },
+            "S7k": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "DR63", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanan uygulanan öznel töreli yetkisizli dışsal değerdir: DR63."},
+                    "öm": {"code": "DR64", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanmayan uygulanan öznel töreli yetkisizli dışsal değerdir: DR64."}
+                }
+            },
+            "S7l": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "DR65", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanan uygulanan öznel töreli yetkisizli dışsal değerdir: DR65."},
+                    "öm": {"code": "DR66", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanmayan uygulanan öznel töreli yetkisizli dışsal değerdir: DR66."}
+                }
+            },
+            "S8a": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "DR67", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanan dışa doğru belirlenen uygulanan kanel töreli yetkili dışsal değerdir: DR67."},
+                    "öm": {"code": "DR68", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanmayan dışa doğru belirlenen uygulanan kanel töreli yetkili dışsal değerdir: DR68."}
+                }
+            },
+            "S8b": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "DR69", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanan dışa doğru belirlenen uygulanmayan kanel töreli yetkili dışsal değerdir: DR69."},
+                    "öm": {"code": "DR70", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanmayan dışa doğru belirlenen uygulanmayan kanel töreli yetkili dışsal değerdir: DR70."}
+                }
+            },
+            "S8c": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "DR71", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanan dışa doğru belirlenen uygulanan öznel töreli yetkili dışsal değerdir: DR71."},
+                    "öm": {"code": "DR72", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanmayan dışa doğru belirlenen uygulanan öznel töreli yetkili dışsal değerdir: DR72."}
+                }
+            },
+            "S8d": {
+                "text": "ön yoksa öm?",
+                "seçenekler": {
+                    "ön": {"code": "DR73", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanan dışa doğru belirlenen uygulanmayan öznel töreli yetkili dışsal değerdir: DR73."},
+                    "öm": {"code": "DR74", "type": "son", "result": "araştırdığınız değer bir özellikle kaynaklanmayan dışa doğru belirlenen uygulanmayan öznel töreli yetkili dışsal değerdir: DR74."}
+                }
+            }
+        }
+    
+    def gösterimler_flowchart(self):
+        return {
+            "S1": {
+                "text": "gm?",
+                "seçenekler": {
+                    "olumlu": {"code": "GM01", "type": "soru", "next": "S2"},
+                    "Olumsuz": {"code": None, "type": "son", "next": None}
+                }
+            },
+            "S2": {
+                "text": "dl yoksa dz?",
+                "seçenekler": {
+                    "dl": {"code": "GM03", "type": "son", "result": "araştırdığınız gösterim bir devimli gösterimdir: GM03."},
+                    "dz": {"code": "GM02", "type": "son", "result": "araştırdığınız gösterim bir devimsiz gösterimdir: GM02."}
+                }
+            }
+        }
+    
+    def etkilenmeyenler_flowchart(self):
+        return {
+            "S1": {
+                "text": "em?",
+                "seçenekler": {
+                    "olumlu": {"code": None, "type": "son", "next": None},
+                    "Olumsuz": {"code": "EM01", "type": "soru", "next": "S2"}
+                }
+            },
+            "S2": {
+                "text": "el yoksa ez?",
+                "seçenekler": {
+                    "el": {"code": "EM03", "type": "soru", "next": "S3a"},
+                    "ez": {"code": "EM02", "type": "soru", "next": "S3b"}
+                }
+            },
+            "S3a": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "EM04", "type": "son", "result": "araştırdığınız etkilenmeyen bir amaçlanan duyarsız etkilenmeyendir: EM04."},
+                    "am": {"code": "EM05", "type": "son", "result": "araştırdığınız etkilenmeyen bir amaçlanmayan duyarsız etkilenmeyendir: EM05."}
+                }
+            },
+            "S3b": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "EM06", "type": "son", "result": "araştırdığınız etkilenmeyen bir amaçlanan duyarlı etkilenmeyendir: EM06."},
+                    "am": {"code": "EM07", "type": "son", "result": "araştırdığınız etkilenmeyen bir amaçlanmayan duyarlı etkilenmeyendir: EM07."}
+                }
+            }
+        }
+    
+    def uygulayanlar_flowchart(self):
+        return {
+            "S1": {
+                "text": "uy?",
+                "seçenekler": {
+                    "olumlu": {"code": "UY01", "type": "soru", "next": "S2"},
+                    "Olumsuz": {"code": None, "type": "son", "next": None}
+                }
+            },
+            "S2": {
+                "text": "vl yoksa vz?",
+                "seçenekler": {
+                    "vl": {"code": "UY02", "type": "soru", "next": "S3a"},
+                    "vz": {"code": "UY03", "type": "soru", "next": "S3b"}
+                }
+            },
+            "S3a": {
+                "text": "kk yoksa bk?",
+                "seçenekler": {
+                    "kk": {"code": "UY04", "type": "soru", "next": "S4a"},
+                    "bk": {"code": "UY05", "type": "soru", "next": "S4b"}
+                }
+            },
+            "S3b": {
+                "text": "kk yoksa bk?",
+                "seçenekler": {
+                    "kk": {"code": "UY06", "type": "soru", "next": "S4c"},
+                    "bk": {"code": "UY07", "type": "soru", "next": "S4d"}
+                }
+            },
+            "S4a": {
+                "text": "ek yoksa şd?",
+                "seçenekler": {
+                    "ek": {"code": "UY08", "type": "soru", "next": "S5a"},
+                    "şd": {"code": "UY09", "type": "soru", "next": "S5b"}
+                }
+            },
+            "S4b": {
+                "text": "ek yoksa şd?",
+                "seçenekler": {
+                    "ek": {"code": "UY10", "type": "soru", "next": "S5c"},
+                    "şd": {"code": "UY11", "type": "soru", "next": "S5d"}
+                }
+            },
+            "S4c": {
+                "text": "ek yoksa şd?",
+                "seçenekler": {
+                    "ek": {"code": "UY12", "type": "soru", "next": "S5e"},
+                    "şd": {"code": "UY13", "type": "soru", "next": "S5f"}
+                }
+            },
+            "S4d": {
+                "text": "ek yoksa şd?",
+                "seçenekler": {
+                    "ek": {"code": "UY14", "type": "soru", "next": "S5g"},
+                    "şd": {"code": "UY15", "type": "soru", "next": "S5h"}
+                }
+            },
+            "S5a": {
+                "text": "tu yoksa ku?",
+                "seçenekler": {
+                    "tu": {"code": "UY16", "type": "soru", "next": "S6a"},
+                    "ku": {"code": "UY17", "type": "soru", "next": "S6b"}
+                }
+            },
+            "S5b": {
+                "text": "tu yoksa ku?",
+                "seçenekler": {
+                    "tu": {"code": "UY18", "type": "soru", "next": "S6c"},
+                    "ku": {"code": "UY19", "type": "soru", "next": "S6d"}
+                }
+            },
+            "S5c": {
+                "text": "tu yoksa ku?",
+                "seçenekler": {
+                    "tu": {"code": "UY20", "type": "soru", "next": "S6e"},
+                    "ku": {"code": "UY21", "type": "soru", "next": "S6f"}
+                }
+            },
+            "S5d": {
+                "text": "tu yoksa ku?",
+                "seçenekler": {
+                    "tu": {"code": "UY22", "type": "soru", "next": "S6g"},
+                    "ku": {"code": "UY23", "type": "soru", "next": "S6h"}
+                }
+            },
+            "S5e": {
+                "text": "tu yoksa ku?",
+                "seçenekler": {
+                    "tu": {"code": "UY24", "type": "soru", "next": "S6i"},
+                    "ku": {"code": "UY25", "type": "soru", "next": "S6j"}
+                }
+            },
+            "S5f": {
+                "text": "tu yoksa ku?",
+                "seçenekler": {
+                    "tu": {"code": "UY26", "type": "soru", "next": "S6k"},
+                    "ku": {"code": "UY27", "type": "soru", "next": "S6l"}
+                }
+            },
+            "S5g": {
+                "text": "tu yoksa ku?",
+                "seçenekler": {
+                    "tu": {"code": "UY28", "type": "soru", "next": "S6m"},
+                    "ku": {"code": "UY29", "type": "soru", "next": "S6n"}
+                }
+            },
+            "S5h": {
+                "text": "tu yoksa ku?",
+                "seçenekler": {
+                    "tu": {"code": "UY30", "type": "soru", "next": "S6o"},
+                    "ku": {"code": "UY31", "type": "soru", "next": "S6p"}
+                }
+            },
+            "S6a": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "UY32", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanan tümünü-uygulayan eskiden kendisinin-kaynaklandığını varlıklı uygulayandır: UY32."},
+                    "am": {"code": "UY33", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanmayan tümünü-uygulayan eskiden kendisinin-kaynaklandığını varlıklı uygulayandır: UY33."}
+                }
+            },
+            "S6b": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "UY34", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanan Kesımsel-uygulayan eskiden kendisinin-kaynaklandığını varlıklı uygulayandır: UY34."},
+                    "am": {"code": "UY35", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanmayan Kesımsel-uygulayan eskiden kendisinin-kaynaklandığını varlıklı uygulayandır: UY35."}
+                }
+            },
+            "S6c": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "UY36", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanan tümünü-uygulayan şimdi kendisinin-kaynaklandığını varlıklı uygulayandır: UY36."},
+                    "am": {"code": "UY37", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanmayan tümünü-uygulayan şimdi kendisinin-kaynaklandığını varlıklı uygulayandır: UY37."}
+                }
+            },
+            "S6d": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "UY38", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanan Kesımsel-uygulayan şimdi kendisinin-kaynaklandığını varlıklı uygulayandır: UY38."},
+                    "am": {"code": "UY39", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanmayan Kesımsel-uygulayan şimdi kendisinin-kaynaklandığını varlıklı uygulayandır: UY39."}
+                }
+            },
+            "S6e": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "UY40", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanan tümünü-uygulayan eskiden başkasının-kaynaklandığını varlıklı uygulayandır: UY40."},
+                    "am": {"code": "UY41", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanmayan tümünü-uygulayan eskiden başkasının-kaynaklandığını varlıklı uygulayandır: UY41."}
+                }
+            },
+            "S6f": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "UY42", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanan Kesımsel-uygulayan eskiden başkasının-kaynaklandığını varlıklı uygulayandır: UY42."},
+                    "am": {"code": "UY43", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanmayan Kesımsel-uygulayan eskiden başkasının-kaynaklandığını varlıklı uygulayandır: UY43."}
+                }
+            },
+            "S6g": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "UY44", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanan tümünü-uygulayan şimdi başkasının-kaynaklandığını varlıklı uygulayandır: UY44."},
+                    "am": {"code": "UY45", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanmayan tümünü-uygulayan şimdi başkasının-kaynaklandığını varlıklı uygulayandır: UY45."}
+                }
+            },
+            "S6h": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "UY46", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanan Kesımsel-uygulayan şimdi başkasının-kaynaklandığını varlıklı uygulayandır: UY46."},
+                    "am": {"code": "UY47", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanmayan Kesımsel-uygulayan şimdi başkasının-kaynaklandığını varlıklı uygulayandır: UY47."}
+                }
+            },
+            "S6i": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "UY48", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanan tümünü-uygulayan eskiden kendisinin-kaynaklandığını varlıksız uygulayandır: UY48."},
+                    "am": {"code": "UY49", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanmayan tümünü-uygulayan eskiden kendisinin-kaynaklandığını varlıksız uygulayandır: UY49."}
+                }
+            },
+            "S6j": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "UY50", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanan Kesımsel-uygulayan eskiden kendisinin-kaynaklandığını varlıksız uygulayandır: UY50."},
+                    "am": {"code": "UY51", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanmayan Kesımsel-uygulayan eskiden kendisinin-kaynaklandığını varlıksız uygulayandır: UY51."}
+                }
+            },
+            "S6k": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "UY52", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanan tümünü-uygulayan şimdi kendisinin-kaynaklandığını varlıksız uygulayandır: UY52."},
+                    "am": {"code": "UY53", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanmayan tümünü-uygulayan şimdi kendisinin-kaynaklandığını varlıksız uygulayandır: UY53."}
+                }
+            },
+            "S6l": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "UY54", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanan Kesımsel-uygulayan şimdi kendisinin-kaynaklandığını varlıksız uygulayandır: UY54."},
+                    "am": {"code": "UY55", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanmayan Kesımsel-uygulayan şimdi kendisinin-kaynaklandığını varlıksız uygulayandır: UY55."}
+                }
+            },
+            "S6m": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "UY56", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanan tümünü-uygulayan eskiden başkasının-kaynaklandığını varlıksız uygulayandır: UY56."},
+                    "am": {"code": "UY57", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanmayan tümünü-uygulayan eskiden başkasının-kaynaklandığını varlıksız uygulayandır: UY57."}
+                }
+            },
+            "S6n": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "UY58", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanan Kesımsel-uygulayan eskiden başkasının-kaynaklandığını varlıksız uygulayandır: UY58."},
+                    "am": {"code": "UY59", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanmayan Kesımsel-uygulayan eskiden başkasının-kaynaklandığını varlıksız uygulayandır: UY59."}
+                }
+            },
+            "S6o": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "UY60", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanan tümünü-uygulayan şimdi başkasının-kaynaklandığını varlıksız uygulayandır: UY60."},
+                    "am": {"code": "UY61", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanmayan tümünü-uygulayan şimdi başkasının-kaynaklandığını varlıksız uygulayandır: UY61."}
+                }
+            },
+            "S6p": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "UY62", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanan Kesımsel-uygulayan şimdi başkasının-kaynaklandığını varlıksız uygulayandır: UY62."},
+                    "am": {"code": "UY63", "type": "son", "result": "araştırdığınız uygulayan bir amaçlanmayan Kesımsel-uygulayan şimdi başkasının-kaynaklandığını varlıksız uygulayandır: UY63."}
+                }
+            }
+        }
+    
+    def uyguraçları_flowchart(self):
+        return {
+            "S1": {
+                "text": "ur?",
+                "seçenekler": {
+                    "olumlu": {"code": None, "type": "soru", "next": "S2"},
+                    "Olumsuz": {"code": None, "type": "son", "next": None}
+                }
+            },
+            "S2": {
+                "text": "np yoksa ph?",
+                "seçenekler": {
+                    "ph": {"code": "UR02", "type": "son", "result": "araştırdığınız uyguraçı bir biçimli uyguraçıdıir: UR02."},
+                    "np": {"code": "UR03", "type": "son", "result": "araştırdığınız uyguraçı bir biçimsiz uyguraçıdır: UR03."}
+                }
+            }
+        }
+    
+    def tekrarlayanlar_flowchart(self):
+        return {
+            "S1": {
+                "text": "tk?",
+                "seçenekler": {
+                    "olumlu": {"code": "TK01", "type": "soru", "next": "S2"},
+                    "Olumsuz": {"code": None, "type": "son", "next": None}
+                }
+            },
+            "S2": {
+                "text": "dm yoksa dn?",
+                "seçenekler": {
+                    "dn": {"code": "TK03", "type": "soru", "next": "S3b"},
+                    "dm": {"code": "TK02", "type": "soru", "next": "S3a"}
+                }
+            },
+            "S3a": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "TK04", "type": "son", "result": "araştırdığınız tekrarlayan bir amaçlanan düşünemeyen tekrarlayandır: TK04."},
+                    "am": {"code": "TK05", "type": "son", "result": "araştırdığınız tekrarlayan bir amaçlanmayan düşünemeyen tekrarlayandır: TK05."}
+                }
+            },
+            "S3b": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "TK06", "type": "son", "result": "araştırdığınız tekrarlayan bir amaçlanan düşünebilen tekrarlayandır: TK06."},
+                    "am": {"code": "TK07", "type": "son", "result": "araştırdığınız tekrarlayan bir amaçlanmayan düşünebilen tekrarlayandır: TK07."}
+                }
+            }
+        }
+    
+    def onaylamayanlar_flowchart(self):
+        return {
+            "S1": {
+                "text": "om?",
+                "seçenekler": {
+                    "olumlu": {"code": "OM01", "type": "soru", "next": "S2"},
+                    "Olumsuz": {"code": None, "type": "son", "next": None}
+                }
+            },
+            "S2": {
+                "text": "km yoksa tm?",
+                "seçenekler": {
+                    "tm": {"code": "OM03", "type": "soru", "next": "S3a"},
+                    "km": {"code": "OM02", "type": "soru", "next": "S3b"}
+                }
+            },
+            "S3a": {
+                "text": "kk yoksa bk?",
+                "seçenekler": {
+                    "kk": {"code": "OM06", "type": "soru", "next": "S4a"},
+                    "bk": {"code": "OM07", "type": "soru", "next": "S4b"}
+                }
+            },
+            "S3b": {
+                "text": "kk yoksa bk?",
+                "seçenekler": {
+                    "kk": {"code": "OM04", "type": "soru", "next": "S4c"},
+                    "bk": {"code": "OM05", "type": "soru", "next": "S4d"}
+                }
+            },
+            "S4a": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "OM08", "type": "son", "result": "araştırdığınız onaylamayan bir amaçlanan kendisinin-kaynaklandığını Kesımsel onaylamayandır: OM08."},
+                    "am": {"code": "OM09", "type": "son", "result": "araştırdığınız onaylamayan bir amaçlanmayan kendisinin-kaynaklandığını Kesımsel onaylamayandır: OM09."}
+                }
+            },
+            "S4b": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "OM10", "type": "son", "result": "araştırdığınız onaylamayan bir amaçlanan başkasının-kaynaklandığını Kesımsel onaylamayandır: OM10."},
+                    "am": {"code": "OM11", "type": "son", "result": "araştırdığınız onaylamayan bir amaçlanmayan başkasının-kaynaklandığını Kesımsel onaylamayandır: OM11."}
+                }
+            },
+            "S4c": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "OM12", "type": "son", "result": "araştırdığınız onaylamayan bir amaçlanan kendisinin-kaynaklandığını tümünü onaylamayandır: OM12."},
+                    "am": {"code": "OM13", "type": "son", "result": "araştırdığınız onaylamayan bir amaçlanmayan kendisinin-kaynaklandığını tümünü onaylamayandır: OM13."}
+                }
+            },
+            "S4d": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "OM14", "type": "son", "result": "araştırdığınız onaylamayan bir amaçlanan başkasının-kaynaklandığını tümünü onaylamayandır: OM14."},
+                    "am": {"code": "OM15", "type": "son", "result": "araştırdığınız onaylamayan bir amaçlanmayan başkasının-kaynaklandığını tümünü onaylamayandır: OM15."}
+                }
+            }
+        }
+    
+    def onaylayanlar_flowchart(self):
+        return {
+            "S1": {
+                "text": "ol?",
+                "seçenekler": {
+                    "olumlu": {"code": "OL01", "type": "soru", "next": "S2"},
+                    "Olumsuz": {"code": None, "type": "son", "next": None}
+                }
+            },
+            "S2": {
+                "text": "es yoksa ey?",
+                "seçenekler": {
+                    "ey": {"code": "OL03", "type": "soru", "next": "S3a"},
+                    "es": {"code": "OL02", "type": "soru", "next": "S3b"}
+                }
+            },
+            "S3a": {
+                "text": "kk yoksa bk?",
+                "seçenekler": {
+                    "kk": {"code": "OL06", "type": "soru", "next": "S4a"},
+                    "bk": {"code": "OL07", "type": "soru", "next": "S4b"}
+                }
+            },
+            "S3b": {
+                "text": "kk yoksa bk?",
+                "seçenekler": {
+                    "kk": {"code": "OL04", "type": "soru", "next": "S4c"},
+                    "bk": {"code": "OL05", "type": "soru", "next": "S4d"}
+                }
+            },
+            "S4a": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "OL08", "type": "son", "result": "araştırdığınız onaylayan bir amaçlanan kendisinin-kaynaklandığını eylemsiz onaylayandır: OL08."},
+                    "am": {"code": "OL09", "type": "son", "result": "araştırdığınız onaylayan bir amaçlanmayan kendisinin-kaynaklandığını eylemsiz onaylayandır: OL09."}
+                }
+            },
+            "S4b": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "OL10", "type": "son", "result": "araştırdığınız onaylayan bir amaçlanan başkasının-kaynaklandığını eylemsiz onaylayandır: OL10."},
+                    "am": {"code": "OL11", "type": "son", "result": "araştırdığınız onaylayan bir amaçlanmayan başkasının-kaynaklandığını eylemsiz onaylayandır: OL11."}
+                }
+            },
+            "S4c": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "OL12", "type": "son", "result": "araştırdığınız onaylayan bir amaçlanan kendisinin-kaynaklandığını eylemli onaylayandır: OL12."},
+                    "am": {"code": "OL13", "type": "son", "result": "araştırdığınız onaylayan bir amaçlanmayan kendisinin-kaynaklandığını eylemli onaylayandır: OL13."}
+                }
+            },
+            "S4d": {
+                "text": "an yoksa am?",
+                "seçenekler": {
+                    "an": {"code": "OL14", "type": "son", "result": "araştırdığınız onaylayan bir amaçlanan başkasının-kaynaklandığını eylemli onaylayandır: OL14."},
+                    "am": {"code": "OL15", "type": "son", "result": "araştırdığınız onaylayan bir amaçlanmayan başkasının-kaynaklandığını eylemli onaylayandır: OL15."}
+                }
+            }
+        }
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = törelmelikkurumbölümyerleştirici(root)
+    root.mainloop()

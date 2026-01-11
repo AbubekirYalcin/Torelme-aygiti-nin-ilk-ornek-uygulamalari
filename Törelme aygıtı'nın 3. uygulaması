@@ -1,0 +1,917 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+import json
+import re
+import uuid
+
+class TorenmelikBagmaToplamiOnaylayicisi: #
+    def __init__(self, root):
+        self.root = root
+        self.root.title("törelmelik Bağma Toplamı Onaylayıcısı - Uygulama 3") #
+        self.sets = []
+        self.tab_control = ttk.Notebook(self.root)
+        self.tab_control.pack(fill=tk.BOTH, expand=True)
+        self.valid_statement_source_pairs = {
+            'AT31': 'KN30', 'AT32': 'KN31', 'AT33': 'KN32', 'AT34': 'KN33', 'AT43': 'KN42',
+            'AT44': 'KN43', 'AT45': 'KN44', 'AT46': 'KN45', 'AT47': 'KN46', 'AT48': 'KN47',
+            'AT49': 'KN48', 'AT50': 'KN49', 'AT52': 'KN51', 'AT54': 'KN53', 'AT56': 'KN55',
+            'AT58': 'KN57', 'AT59': 'KN58', 'AT60': 'KN59', 'AT61': 'KN60', 'AT62': 'KN61',
+            'AT63': 'KN62', 'AT64': 'KN63', 'AT65': 'KN64', 'AT66': 'KN65', 'AT67': 'KN66',
+            'AT68': 'KN67', 'AT69': 'KN68', 'AT70': 'KN69', 'AT71': 'KN70', 'AT72': 'KN71',
+            'AT73': 'KN72', 'AT74': 'KN73'
+        } # [cite: 3882-3913]
+        self.valid_source_statement_pairs = {v: k for k, v in self.valid_statement_source_pairs.items()}
+        self.valid_statement_value_pairs = {
+            'AT31': {'values': ['DR31'], 'required': 'DR31'},
+            'AT32': {'values': ['DR31', 'DR32'], 'required': 'DR32'},
+            'AT33': {'values': ['DR33'], 'required': 'DR33'},
+            'AT34': {'values': ['DR31', 'DR32', 'DR33', 'DR34'], 'required': 'DR34'},
+            'AT43': {'values': ['DR43'], 'required': 'DR43'},
+            'AT44': {'values': ['DR43', 'DR44'], 'required': 'DR44'},
+            'AT45': {'values': ['DR45'], 'required': 'DR45'},
+            'AT46': {'values': ['DR43', 'DR44', 'DR45', 'DR46'], 'required': 'DR46'},
+            'AT47': {'values': ['DR47'], 'required': 'DR47'},
+            'AT48': {'values': ['DR47', 'DR48'], 'required': 'DR48'},
+            'AT49': {'values': ['DR47', 'DR48', 'DR49'], 'required': 'DR49'},
+            'AT50': {'values': ['DR47', 'DR48', 'DR49', 'DR50'], 'required': 'DR50'},
+            'AT52': {'values': ['DR52'], 'required': 'DR52'},
+            'AT54': {'values': ['DR54'], 'required': 'DR54'},
+            'AT56': {'values': ['DR56'], 'required': 'DR56'},
+            'AT58': {'values': ['DR58'], 'required': 'DR58'},
+            'AT59': {'values': ['DR59'], 'required': 'DR59'},
+            'AT60': {'values': ['DR59', 'DR60'], 'required': 'DR60'},
+            'AT61': {'values': ['DR61'], 'required': 'DR61'},
+            'AT62': {'values': ['DR59', 'DR60', 'DR61', 'DR62'], 'required': 'DR62'},
+            'AT63': {'values': ['DR63'], 'required': 'DR63'},
+            'AT64': {'values': ['DR63', 'DR64'], 'required': 'DR64'},
+            'AT65': {'values': ['DR65'], 'required': 'DR65'},
+            'AT66': {'values': ['DR63', 'DR64', 'DR65', 'DR66'], 'required': 'DR66'},
+            'AT67': {'values': ['DR67'], 'required': 'DR67'},
+            'AT68': {'values': ['DR67', 'DR68'], 'required': 'DR68'},
+            'AT69': {'values': ['DR69'], 'required': 'DR69'},
+            'AT70': {'values': ['DR67', 'DR68', 'DR69', 'DR70'], 'required': 'DR70'},
+            'AT71': {'values': ['DR71'], 'required': 'DR71'},
+            'AT72': {'values': ['DR71', 'DR72'], 'required': 'DR72'},
+            'AT73': {'values': ['DR73'], 'required': 'DR73'},
+            'AT74': {'values': ['DR71', 'DR72', 'DR73', 'DR74'], 'required': 'DR74'}
+        } # [cite: 3882-3913]
+        self.valid_ni_tags = ['EM04', 'EM05', 'EM06', 'EM07']
+        self.valid_ef_tags = [f"UY{i}" for i in range(32, 64)]
+        self.valid_rp_tags = ['TK04', 'TK05', 'TK06', 'TK07']
+        self.valid_re_tags = [f"OM{i:02d}" for i in range(8, 16)]
+        self.valid_ac_tags = [f"OL{i:02d}" for i in range(8, 16)]
+        self.valid_means_tags = ["UR02", "UR03"]
+        self.valid_displayment_tags = ["GM02", "GM03"]
+        self.valid_statement_tags = list(self.valid_statement_source_pairs.keys())
+        self.valid_source_tags = list(self.valid_source_statement_pairs.keys())
+        self.valid_value_tags = sorted(set(sum([d['values'] for d in self.valid_statement_value_pairs.values()], [])))
+        self.required_values = ['DR31', 'DR33', 'DR43', 'DR45', 'DR47', 'DR49', 'DR59', 'DR61', 'DR63', 'DR65', 'DR67', 'DR69', 'DR71', 'DR73']
+        self.required_ini_tags = ['EM04', 'EM06', 'UY32', 'UY34', 'UY36', 'UY38', 'UY40', 'UY42', 'UY44', 'UY46', 'UY48', 'UY50', 'UY52', 'UY54', 'UY56', 'UY58', 'UY60', 'UY62', 'TK04', 'TK06', 'OM08', 'OM10', 'OM12', 'OM14', 'OL08', 'OL10', 'OL12', 'OL14']
+        self.ac_compat = {
+            'OL12': ['UY36', 'UY38'],
+            'OL13': ['UY37', 'UY39'],
+            'OL14': ['UY44', 'UY46', 'TK06'],
+            'OL15': ['UY45', 'UY47', 'TK07']
+        } # [cite: 4037-4040]
+        self.conversion_rules = {
+            'OL08': ['OM08', 'OM12'], 'OL09': ['OM09', 'OM13'], 'OL10': ['OM10', 'OM14'], 'OL11': ['OM11', 'OM15'],
+            'OL12': ['OM08', 'OM12'], 'OL13': ['OM09', 'OM13'], 'OL14': ['OM10', 'OM14'], 'OL15': ['OM11', 'OM15'],
+            'OM08': ['OL08', 'OL12'], 'OM09': ['OL09', 'OL13'], 'OM10': ['OL10', 'OL14'], 'OM11': ['OL11', 'OL15'],
+            'OM12': ['OL08', 'OL12'], 'OM13': ['OL09', 'OL13'], 'OM14': ['OL10', 'OL14'], 'OM15': ['OL11', 'OL15']
+        } # [cite: 3953-3969]
+        self.transformation_rules = {
+            'EM04': ['EM06'], 'EM05': ['EM07'], 'EM06': ['EM04'], 'EM07': ['EM05'],
+            'UY32': ['UY34', 'UY36', 'UY38'], 'UY33': ['UY35', 'UY37', 'UY39'], 'UY34': ['UY32', 'UY36', 'UY38'],
+            'UY35': ['UY33', 'UY37', 'UY39'], 'UY36': ['UY32', 'UY34', 'UY38'], 'UY37': ['UY33', 'UY35', 'UY39'],
+            'UY38': ['UY32', 'UY34', 'UY36'], 'UY39': ['UY33', 'UY35', 'UY37'], 'UY40': ['UY42', 'UY44', 'UY46'],
+            'UY41': ['UY43', 'UY45', 'UY47'], 'UY42': ['UY40', 'UY44', 'UY46'], 'UY43': ['UY41', 'UY45', 'UY47'],
+            'UY44': ['UY40', 'UY42', 'UY46'], 'UY45': ['UY41', 'UY43', 'UY47'], 'UY46': ['UY40', 'UY42', 'UY44'],
+            'UY47': ['UY41', 'UY43', 'UY45'], 'UY48': ['UY50', 'UY52', 'UY54'], 'UY49': ['UY51', 'UY53', 'UY55'],
+            'UY50': ['UY48', 'UY52', 'UY54'], 'UY51': ['UY49', 'UY53', 'UY55'], 'UY52': ['UY48', 'UY50', 'UY54'],
+            'UY53': ['UY49', 'UY51', 'UY55'], 'UY54': ['UY48', 'UY50', 'UY52'], 'UY55': ['UY49', 'UY51', 'UY53'],
+            'UY56': ['UY58', 'UY60', 'UY62'], 'UY57': ['UY59', 'UY61', 'UY63'], 'UY58': ['UY56', 'UY60', 'UY62'],
+            'UY59': ['UY57', 'UY61', 'UY63'], 'UY60': ['UY56', 'UY58', 'UY62'], 'UY61': ['UY57', 'UY59', 'UY63'],
+            'UY62': ['UY56', 'UY58', 'UY60'], 'UY63': ['UY57', 'UY59', 'UY61'],
+            'OM08': ['OM12'], 'OM09': ['OM13'], 'OM10': ['OM14'], 'OM11': ['OM15'],
+            'OM12': ['OM08'], 'OM13': ['OM09'], 'OM14': ['OM10'], 'OM15': ['OM11'],
+            'OL08': ['OL12'], 'OL09': ['OL13'], 'OL10': ['OL14'], 'OL11': ['OL15'],
+            'OL12': ['OL08'], 'OL13': ['OL09'], 'OL14': ['OL10'], 'OL15': ['OL11'],
+            'TK04': [], 'TK05': [], 'TK06': [], 'TK07': []
+        } # [cite: 3974-4033]
+        self.function_source_tags = ['KN51', 'KN53', 'KN55', 'KN57', 'KN66', 'KN67', 'KN68', 'KN69', 'KN70', 'KN71', 'KN72', 'KN73']
+        self.process_source_tags = ['KN58', 'KN59', 'KN60', 'KN61', 'KN62', 'KN63', 'KN64', 'KN65']
+        self.function_statement_tags = ['AT52', 'AT54', 'AT56', 'AT58', 'AT67', 'AT68', 'AT69', 'AT70', 'AT71', 'AT72', 'AT73', 'AT74']
+        self.process_statement_tags = ['AT59', 'AT60', 'AT61', 'AT62', 'AT63', 'AT64', 'AT65', 'AT66']
+        self.general_source_mapping = {
+            'KN10': ['KN30', 'KN31', 'KN32', 'KN33'], #
+            'KN16': ['KN42', 'KN43', 'KN44', 'KN45'],
+            'KN18': ['KN46', 'KN47', 'KN48', 'KN49'],
+            'KN22': ['KN51', 'KN53', 'KN66', 'KN67', 'KN68', 'KN69'],
+            'KN23': ['KN55', 'KN57', 'KN70', 'KN71', 'KN72', 'KN73'],
+            'KN24': ['KN58', 'KN59', 'KN60', 'KN61'],
+            'KN25': ['KN62', 'KN63', 'KN64', 'KN65']
+        } # [cite: 3939-3946]
+        self.general_source_options = list(self.general_source_mapping.keys())
+        self.setup_gui()
+
+    def setup_gui(self):
+        self.main_frame = ttk.Frame(self.tab_control)
+        self.tab_control.add(self.main_frame, text="yazın/dizge 1") #
+        self.setup_tab(self.main_frame)
+
+    def setup_tab(self, tab):
+        content_frame = ttk.Frame(tab)
+        content_frame.pack(fill=tk.BOTH, expand=True)
+
+        controls_frame = ttk.Frame(content_frame)
+        controls_frame.pack(anchor=tk.W, padx=10, pady=5)
+
+        # yazın/dizge
+        ttk.Label(controls_frame, text="yazın/dizge:").pack(anchor=tk.W, pady=5) #
+        tab.system_focus = ttk.Entry(controls_frame, width=30)
+        tab.system_focus.pack(anchor=tk.W, pady=2)
+        tab.system_focus.bind("<KeyRelease>", lambda event, t=tab: self.update_tab_name(t, event.widget.get()))
+
+        # Bağlantılı Sekmeler
+        ttk.Label(controls_frame, text="Bağlantılı Sekmeler:").pack(anchor=tk.W, pady=5) #
+        tab.interlinked_tabs = ttk.Entry(controls_frame, width=30)
+        tab.interlinked_tabs.pack(anchor=tk.W, pady=2)
+
+        # Toplam biçimi
+        ttk.Label(controls_frame, text="toplam biçimi seçin:").pack(anchor=tk.W, pady=5) #
+        tab.format_var = tk.StringVar(value="")
+        formats = ["Sıralamalı", "Aşamalı Sıralama", "Sıralama ile Aşamalı Sıralama"] # [cite: 3174]
+        tab.format_menu = ttk.Combobox(controls_frame, textvariable=tab.format_var, values=formats, state="readonly")
+        tab.format_menu.pack(anchor=tk.W)
+
+        # Butonlar
+        ttk.Button(controls_frame, text="Toplam Ekle", command=lambda: self.add_set(tab, tab.format_var, interlinked=False)).pack(anchor=tk.W, pady=5) #
+        ttk.Button(controls_frame, text="Sekme Ekle", command=self.add_tab).pack(anchor=tk.W, pady=5) #
+        ttk.Button(controls_frame, text="Sekmeyi Doğrula", command=lambda: self.validate_tab(tab)).pack(anchor=tk.W, pady=5) #
+        ttk.Button(controls_frame, text="Toplamları tut", command=self.save_sets).pack(anchor=tk.W, pady=5) #
+
+        canvas_frame = ttk.Frame(content_frame)
+        canvas_frame.pack(fill=tk.BOTH, expand=True)
+        tab.sets_canvas = tk.Canvas(canvas_frame)
+        v_scrollbar = ttk.Scrollbar(canvas_frame, orient=tk.VERTICAL, command=tab.sets_canvas.yview)
+        h_scrollbar = ttk.Scrollbar(canvas_frame, orient=tk.HORIZONTAL, command=tab.sets_canvas.xview)
+        tab.sets_frame = ttk.Frame(tab.sets_canvas)
+        tab.sets_canvas.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+        tab.sets_canvas.create_window((0, 0), window=tab.sets_frame, anchor="nw")
+        v_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        h_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
+        tab.sets_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        def on_mousewheel(event):
+            if event.delta:
+                tab.sets_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            elif event.num == 4:
+                tab.sets_canvas.yview_scroll(-1, "units")
+            elif event.num == 5:
+                tab.sets_canvas.yview_scroll(1, "units")
+        tab.sets_canvas.bind_all("<MouseWheel>", on_mousewheel)
+        tab.sets_canvas.bind_all("<Button-4>", on_mousewheel)
+        tab.sets_canvas.bind_all("<Button-5>", on_mousewheel)
+
+        tab.sets_frame.bind("<Configure>", lambda e: tab.sets_canvas.configure(scrollregion=tab.sets_canvas.bbox("all")))
+
+    def update_tab_name(self, tab, text):
+        tab_id = str(tab)
+        if text.strip():
+            self.tab_control.tab(tab_id, text=text.strip())
+        else:
+            self.tab_control.tab(tab_id, text="yazın/dizge " + tab_id.split('.')[-1]) #
+
+    def update_kol_kaynak_entry(self, set_info):
+        set_info['kol_kaynak_entry'].pack_forget()
+        if set_info['add_interlinked_button']:
+            set_info['add_interlinked_button'].pack_forget()
+        if set_info['kol_kaynak'].get() == "olumlu": #
+            set_info['kol_kaynak_entry'].pack(anchor=tk.W, pady=2)
+            if not set_info['linked_row_index'] and set_info['add_interlinked_button']:
+                set_info['add_interlinked_button'].pack(anchor=tk.W, pady=2)
+        else:
+            if not set_info['linked_row_index'] and set_info['add_interlinked_button']:
+                set_info['add_interlinked_button'].pack(anchor=tk.W, pady=2)
+
+    def validate_tab(self, tab):
+        tab_id = str(tab)
+        tab_name = self.tab_control.tab(tab_id, "text")
+        tab_sets = [s for s in self.sets if s.get('tab') == tab]
+        if not tab_sets:
+            messagebox.showerror("yanlışlık", f"{tab_name} içinde doğrulanacak toplam yok.") #
+            return
+        top_level_count = len([s for s in tab_sets if s['parent_set_id'] is None])
+        basic_errors = []
+        source_tags = []
+        for set_info in tab_sets:
+            set_focus = set_info['series_focus'].get() or 'Yok'
+            pos_prefix = f"Dizi Odağı {set_focus} olan Toplam" #
+            if not set_info['series_focus'].get().strip():
+                basic_errors.append(f"{pos_prefix}: Dizi odağı belirtilmeli.") #
+            if set_info['source_position'].get() == "Konumsuz" and top_level_count > 1: #
+                basic_errors.append(f"{pos_prefix}: Sekme birden fazla toplam içerdiğinde Kaynak Konumu 'Konumsuz' olamaz.") #
+            if not set_info['source_identity'].get().strip():
+                basic_errors.append(f"{pos_prefix}: Kaynak kimliği belirtilmeli.") #
+            if not set_info['general_moral_source'].get():
+                basic_errors.append(f"{pos_prefix}: Genel töreli kaynak seçilmeli.") #
+            if set_info['kol_kaynak'].get() == "olumlu" and not set_info['kol_kaynak_entry'].get().strip(): #
+                basic_errors.append(f"{pos_prefix}: Kol Kaynak 'olumlu' ise Kol kaynak metni belirtilmeli.") #
+            general_source = set_info['general_moral_source'].get()
+            format_type = set_info['format']
+            main_idx = 1 if "Sıralamalı" in format_type else 0 #
+            inter_idx = main_idx + 1
+            for ri, row in enumerate(set_info['rows'], 1):
+                main_chain = row[main_idx].get().strip()
+                if main_chain:
+                    source_match = re.match(r"^töreli kaynak \[([^\(]+?)\s*\((\w+)\)", main_chain) #
+                    if source_match:
+                        source_tags.append((source_match.group(2), f"{pos_prefix}, çuzge {ri}, ana bağma"))
+                interlinked_chains = row[inter_idx]
+                if not isinstance(interlinked_chains, list):
+                    interlinked_chains = []
+                for ii, ich in enumerate(interlinked_chains, 1):
+                    ich_text = ich.get().strip()
+                    if ich_text:
+                        source_match = re.match(r"^töreli kaynak \[([^\(]+?)\s*\((\w+)\)", ich_text) #
+                        if source_match:
+                            source_tags.append((source_match.group(2), f"{pos_prefix}, çuzge {ri}, bağlantılı bağma {ii}"))
+        if basic_errors:
+            messagebox.showerror("Doğrulama yanlışları", "\n".join(basic_errors)) #
+            return
+        if not source_tags:
+            messagebox.showerror("yanlışlık", f"{tab_name} içinde geçerli bağma bulunamadı.") #
+            return
+        # tüm toplam içinde tutarlı töreli kaynak belirteçlerini kontrol et
+        for set_info in tab_sets:
+            set_focus = set_info['series_focus'].get() or 'Yok'
+            set_source_tags = [
+                tag for tag, pos in source_tags
+                if pos.startswith(f"Dizi Odağı {set_focus} olan Toplam")
+            ]
+            if len(set(set_source_tags)) > 1:
+                messagebox.showerror(
+                    "Doğrulama yanlışsı", #
+                    f"{set_focus}: Bir toplamdaki tüm bağmalar özdeş töreli kaynak belirteçini paylaşmalıdır.\nBulunanlar: {', '.join(set(set_source_tags))}." #
+                )
+                return
+        # Bağmaları doğrula
+        all_chains = []
+        for set_info in tab_sets:
+            general_source = set_info['general_moral_source'].get()
+            format_type = set_info['format']
+            main_idx = 1 if "Sıralamalı" in format_type else 0 #
+            inter_idx = main_idx + 1
+            set_focus = set_info['series_focus'].get() or 'Yok'
+            for ri, row in enumerate(set_info['rows'], 1):
+                main_chain = row[main_idx].get().strip()
+                if main_chain:
+                    all_chains.append((main_chain, general_source, f"Toplam '{set_focus}', çuzge {ri}, ana bağma")) #
+                interlinked_chains = row[inter_idx]
+                if not isinstance(interlinked_chains, list):
+                    interlinked_chains = []
+                for ii, ich in enumerate(interlinked_chains, 1):
+                    ich_text = ich.get().strip()
+                    if ich_text:
+                        all_chains.append((ich_text, general_source, f"Toplam '{set_focus}', çuzge {ri}, bağlantılı bağma {ii}")) #
+        if not all_chains:
+            messagebox.showerror("yanlışlık", f"{tab_name} içinde doğrulanacak bağma yok.") #
+            return
+        source_errors = []
+        for chain, source, pos in all_chains:
+            valid, error = self.validate_source_compatibility(chain, source)
+            if not valid:
+                source_errors.append(f"{pos}: {error}")
+        if source_errors:
+            messagebox.showerror("Kaynak Doğrulama yanlışlıkları", "\n".join(source_errors)) #
+            return
+        internal_errors = []
+        for chain, source, pos in all_chains:
+            valid, error = self.validate_internal(chain)
+            if not valid:
+                internal_errors.append(f"{pos}: {error}")
+        if internal_errors:
+            messagebox.showerror("İçsel Doğrulama yanlışlıkları", "\n".join(internal_errors)) #
+            return
+        messagebox.showinfo("Başarılı", f"{tab_name} içindeki tüm toplamlar geçerli.") #
+
+    def validate_source_compatibility(self, chain, general_source):
+        chain = re.sub(r'\s+', ' ', chain.strip())
+        pattern = r"^töreli kaynak \[([^\(]+?)\s*\((\w+)\)(?:,\s*(?:töreli işlev|töreli anlatım üretim işlemi)\s*\(([^\)]+?)\))?\s*\](?:-.*)?$" #
+        match = re.match(pattern, chain)
+        if not match:
+            return False, f"Bağmadan kaynak belirteçi ayrıştırılamadı; töreli kaynak bağmanın başında olmalıdır. Alınan: '{chain[:50]}{'...' if len(chain) > 50 else ''}'.\nBeklenen biçim: 'töreli kaynak [yazın (KNxx)[, töreli işlev/işlem (yazın)]]-'" #
+        source_identity, chain_source_tag, extra_source = match.groups()
+        specific_sources = self.general_source_mapping.get(general_source, [general_source])
+        if chain_source_tag not in specific_sources:
+            return False, f"töreli kaynak belirteçi '{chain_source_tag}', genel kaynak '{general_source}' için geçerli değil.\nGeçerli belirteçler: {', '.join(specific_sources)}" #
+        if chain_source_tag in self.function_source_tags and not extra_source:
+            return False, f"Kaynak belirteçi '{chain_source_tag}' bir töreli işlev gerektirir, ancak sağlanmadı." #
+        if chain_source_tag in self.process_source_tags and not extra_source:
+            return False, f"Kaynak belirteçi '{chain_source_tag}' bir töreli anlatım üretim işlemi gerektirir, ancak sağlanmadı." #
+        if extra_source and chain_source_tag not in (self.function_source_tags + self.process_source_tags):
+            return False, f"Kaynak belirteçi '{chain_source_tag}' bir töreli işlev veya işlem desteklemiyor, ancak biri sağlandı: '{extra_source}'." #
+        return True, ""
+
+    def validate_internal(self, chain):
+        try:
+            chain = re.sub(r'\s+', ' ', chain.strip())
+            
+            # Altbilgi kontrolü
+            has_footnotes = False
+            footnote_section = ""
+            if "Altbilgiler:" in chain: #
+                has_footnotes = True
+                main_chain, footnote_section = chain.rsplit("Altbilgiler:", 1) #
+                main_chain = main_chain.strip()
+                footnote_section = f"Altbilgiler: {footnote_section.strip()}" #
+            else:
+                main_chain = chain
+
+            # Ana bağma doğrulama deseni
+            pattern = (
+                r"töreli kaynak \[([^\(]+)\s*\((\w+)\)(?:,\s*(?:töreli işlev|töreli anlatım üretim işlemi)\s*\(([^\)]+)\))?\]" #
+                r"- töreli anlatım \[([^\(]+)\s*\((\w+)\)(?:,\s*(?:töreli işlev|töreli anlatım üretim işlemi)\s*\(([^\)]+)\))?,\s*" #
+                r"töreli Değerler\s*\((?:(?:\d+\.\s*)?[^\(]+?\s*\((\w+)\)(?:\.\s*(?:\d+\.\s*)?[^\(]+?\s*\((\w+)\))*)\)\]" #
+                r"(?:- Gösterimler \[([^\(]+)\s*\((\w+)\)\])?" #
+                r"(?:- Etkilenmeyen \[([^\]]*)\])?" #
+                r"(?:- Uygulayanlar \[([^\]]*)\])?" #
+                r"(?:- Tekrarlayanlar \[([^\]]*)\])?" #
+                r"(?:- Onaylamayanlar \[([^\]]*)\])?" #
+                r"(?:- Onaylayanlar \[([^\]]*)\])?" #
+            )
+            
+            match = re.match(pattern, main_chain, re.DOTALL)
+            if not match:
+                return False, "Geçersiz törelmelik bağma biçimi.\nBeklenen biçim: 'töreli kaynak [...] - töreli anlatım [yazın (ATxx), töreli Değerler (...)] - Gösterimler [...] - ...'" #
+
+            groups = match.groups()
+            if len(groups) < 6:
+                return False, "Geçersiz bağma yapısı: eşleşen bileşen sayısı çok az." #
+                
+            source_identity, chain_source_tag, extra_source, statement, statement_tag, extra_statement = groups[:6]
+            value_tags = [tag for tag in groups[6:8] if tag and tag.startswith('DR')] if len(groups) > 7 else [] #
+            displayment_desc = groups[8] if len(groups) > 8 else ""
+            displayment_tag = groups[9] if len(groups) > 9 else ""
+            ni_str = groups[10] if len(groups) > 10 else ""
+            ef_str = groups[11] if len(groups) > 11 else ""
+            rp_str = groups[12] if len(groups) > 12 else ""
+            re_str = groups[13] if len(groups) > 13 else ""
+            ac_str = groups[14] if len(groups) > 14 else ""
+
+            # Orijinal doğrulama mantığı
+            expected_statement = self.valid_source_statement_pairs.get(chain_source_tag)
+            if not expected_statement:
+                return False, f"Kaynak belirteçi '{chain_source_tag}' geçerli bir kaynak belirteçi değil.\nGeçerli belirteçler: {', '.join(self.valid_source_tags)}." #
+            if statement_tag != expected_statement:
+                return False, f"Anlatım belirteçi '{statement_tag}', kaynak belirteçi '{chain_source_tag}' ile uyumsuz.\nBeklenen anlatım belirteçi: '{expected_statement}'." #
+
+            if chain_source_tag in self.function_source_tags and not extra_source:
+                return False, f"Kaynak belirteçi '{chain_source_tag}' bir töreli işlev gerektirir, ancak sağlanmadı." #
+            if chain_source_tag in self.process_source_tags and not extra_source:
+                return False, f"Kaynak belirteçi '{chain_source_tag}' bir töreli anlatım üretim işlemi gerektirir, ancak sağlanmadı." #
+            if extra_source and chain_source_tag not in (self.function_source_tags + self.process_source_tags):
+                return False, f"Kaynak belirteçi '{chain_source_tag}' bir töreli işlev veya işlem desteklemiyor, ancak biri sağlandı: '{extra_source}'." #
+
+            if statement_tag in self.function_statement_tags and not extra_statement:
+                return False, f"Anlatım belirteçi '{statement_tag}' bir töreli işlev gerektirir, ancak sağlanmadı." #
+            if statement_tag in self.process_statement_tags and not extra_statement:
+                return False, f"Anlatım belirteçi '{statement_tag}' bir töreli anlatım üretim işlemi gerektirir, ancak sağlanmadı." #
+            if extra_statement and statement_tag not in (self.function_statement_tags + self.process_statement_tags):
+                return False, f"Anlatım belirteçi '{statement_tag}' bir töreli işlev veya işlem desteklemiyor, ancak biri sağlandı: '{extra_statement}'." #
+
+            if not value_tags:
+                return False, "bir yoksa bir artı töreli değer gereklidir." #
+            valid_values = self.valid_statement_value_pairs.get(statement_tag, {}).get('values', [])
+            if not valid_values:
+                return False, f"Anlatım belirteçi '{statement_tag}' geçerli bir anlatım belirteçi değil.\nGeçerli belirteçler: {', '.join(self.valid_statement_tags)}." #
+            required_value = self.valid_statement_value_pairs.get(statement_tag, {}).get('required', '')
+            for vt in value_tags:
+                if vt not in valid_values:
+                    return False, f"Değer belirteçi '{vt}', anlatım '{statement_tag}' için geçersiz.\nGeçerli değer belirteçleri: {', '.join(valid_values)}." #
+            if required_value and required_value not in value_tags:
+                return False, f"Gerekli değer belirteçi '{required_value}', anlatım '{statement_tag}' için eksik." #
+
+            if displayment_desc and not displayment_tag:
+                return False, "Bir gösterim açıklaması belirtildiyse gösterim belirteçi sağlanmalıdır." #
+            if displayment_tag and not displayment_desc:
+                return False, f"Gösterim belirteçi '{displayment_tag}' açıklama olmadan sağlandı." #
+            if displayment_tag and displayment_tag not in self.valid_displayment_tags:
+                return False, f"Geçersiz gösterim belirteçi '{displayment_tag}'.\nGeçerli belirteçler: {', '.join(self.valid_displayment_tags)}." #
+
+            # Etkileşen ayrıştırma
+            def parse_interactors(interactor_str, tag_type, valid_tags, has_subcomponents=False):
+                if not interactor_str:
+                    return [], ""
+                items = []
+                entries = [e.strip() for e in interactor_str.split(".") if e.strip()]
+                for e in entries:
+                    match = re.match(r"^(?:\d+\.\s*)?(.*?)\s*\((\w+)\)(?:,\s*(?:Uyguraçları|Gösterimler)\s*\((.*?)\))?$", e) #
+                    if not match:
+                        return None, f"Geçersiz {tag_type} biçimi: '{e}'.\nBeklenen biçim: 'Varlık (XXxx)[, Uyguraçları/Gösterimler (Açıklama (Belirteç), ...)]'." #
+                    entity, tag, subcomponents = match.groups()
+                    if not entity.strip():
+                        return None, f"{tag_type} '{e}' boş bir varlık açıklamasına sahip." #
+                    if tag not in valid_tags:
+                        return None, f"'{e}' içinde geçersiz {tag_type} belirteçi '{tag}'.\nGeçerli belirteçler: {', '.join(valid_tags)}." #
+                    item = {'entity': entity, 'tag': tag}
+                    if has_subcomponents:
+                        if not subcomponents:
+                            return None, f"{tag_type} '{entity} ({tag})' bir yoksa bir artı bir alt bileşen gerektirir (Uygulayanlar için Uyguraçlar, Tekrarlayanlar için Gösterimler)." #
+                        sub_items = []
+                        sub_entries = [s.strip() for s in subcomponents.split(",") if s.strip()]
+                        for s in sub_entries:
+                            sub_match = re.match(r"^(.*?)\s*\((\w+)\)$", s)
+                            if not sub_match:
+                                return None, f"'{e}' içinde geçersiz {tag_type} alt bileşen biçimi: '{s}'. Beklenen biçim: 'Açıklama (URxx/GMxx)'." #
+                            sub_desc, sub_tag = sub_match.groups()
+                            if not sub_desc.strip():
+                                return None, f"'{e}' içindeki {tag_type} alt bileşeni '{s}' boş bir açıklamaya sahip." #
+                            valid_sub_tags = self.valid_means_tags if tag_type == "Uygulayanlar" else self.valid_displayment_tags #
+                            if sub_tag not in valid_sub_tags:
+                                return None, f"'{e}' içinde geçersiz {tag_type} alt bileşen belirteçi '{sub_tag}'.\nGeçerli belirteçler: {', '.join(valid_sub_tags)}." #
+                            sub_items.append({'desc': sub_desc, 'tag': sub_tag})
+                        item['subcomponents'] = sub_items
+                    elif subcomponents:
+                        return None, f"{tag_type} '{entity} ({tag})' alt bileşenleri desteklemiyor, ancak bazıları sağlandı: '{subcomponents}'." #
+                    items.append(item)
+                return items, ""
+
+            ni_items, ni_error = parse_interactors(ni_str, "Etkilenmeyen", self.valid_ni_tags, False) #
+            if ni_error:
+                return False, ni_error
+            ef_items, ef_error = parse_interactors(ef_str, "Uygulayanlar", self.valid_ef_tags, True) #
+            if ef_error:
+                return False, ef_error
+            rp_items, rp_error = parse_interactors(rp_str, "Tekrarlayanlar", self.valid_rp_tags, True) #
+            if rp_error:
+                return False, rp_error
+            re_items, re_error = parse_interactors(re_str, "Onaylamayanlar", self.valid_re_tags, False) #
+            if re_error:
+                return False, re_error
+            ac_items, ac_error = parse_interactors(ac_str, "Onaylayanlar", self.valid_ac_tags, False) #
+            if ac_error:
+                return False, ac_error
+
+            # Gerekli INI belirteçlerini kontrol et
+            has_required_value = any(vt in self.required_values for vt in value_tags)
+            if has_required_value:
+                all_ini_tags = [item['tag'] for item in ni_items + ef_items + rp_items + re_items + ac_items]
+                if not any(tag in self.required_ini_tags for tag in all_ini_tags):
+                    return False, f"Bağma, belirli töreli değerler ({', '.join(value_tags)}) nedeniyle bir yoksa bir artı bir gerekli etkilenen belirteçi gerektirir.\nGeçerli etkilenen belirteçleri: {', '.join(self.required_ini_tags)}." #
+
+            # Onaylayan uyumluluk kontrolü
+            for ac_item in ac_items:
+                ac_tag = ac_item['tag']
+                ac_entity = ac_item['entity']
+                if ac_tag in ['OL12', 'OL13', 'OL14', 'OL15']:
+                    compat_tags = self.ac_compat.get(ac_tag, [])
+                    if not compat_tags:
+                        return False, f"Onaylayan belirteçi '{ac_tag}' uyumluluk kurallarında tanınmıyor." #
+                    found = False
+                    for ef_item in ef_items:
+                        if ef_item['entity'] == ac_entity and ef_item['tag'] in compat_tags:
+                            found = True
+                            break
+                    if not found:
+                        for rp_item in rp_items:
+                            if rp_item['entity'] == ac_entity and rp_item['tag'] in compat_tags:
+                                found = True
+                                break
+                    if not found:
+                        return False, f"Onaylayan '{ac_entity}' ({ac_tag}), özdeş varlık metnine ve şunlardan birinde bir belirteçe sahip uyumlu bir Uygulayan veya Tekrarlayan gerektirir: {', '.join(compat_tags)}." #
+
+            # Varsa altbilgileri doğrula
+            if has_footnotes:
+                valid, footnote_error = self.validate_footnotes(footnote_section, ni_items + ef_items + rp_items + re_items + ac_items)
+                if not valid:
+                    return False, footnote_error
+
+            return True, ""
+        except Exception as e:
+            return False, f"Bağma doğrulaması sırasında beklenmeyen yanlışlık: {str(e)}" #
+
+    def validate_footnotes(self, footnote_section, all_interactors):
+        try:
+            footnote_content = footnote_section.replace("Altbilgiler:", "").strip() #
+            if not footnote_content:
+                return True, "" 
+
+            entries = [entry.strip() for entry in footnote_content.split(";") if entry.strip()]
+            
+            interactor_lookup = {}
+            type_mapping = {
+                'Etkilenmeyen': 'EM', #
+                'Uygulayanlar': 'UY', #
+                'Tekrarlayanlar': 'TK', #
+                'Onaylamayanlar': 'OM', #
+                'Onaylayanlar': 'OL' #
+            }
+            for interactor in all_interactors:
+                tag = interactor['tag']
+                entity = interactor['entity']
+                if tag.startswith('EM'):
+                    interactor_type = 'Etkilenmeyen'
+                elif tag.startswith('UY'):
+                    interactor_type = 'Uygulayanlar'
+                elif tag.startswith('TK'):
+                    interactor_type = 'Tekrarlayanlar'
+                elif tag.startswith('OM'):
+                    interactor_type = 'Onaylamayanlar'
+                elif tag.startswith('OL'):
+                    interactor_type = 'Onaylayanlar'
+                else:
+                    continue
+                key = f"{interactor_type}_{entity}"
+                if key not in interactor_lookup:
+                    interactor_lookup[key] = []
+                interactor_lookup[key].append(interactor)
+
+            normalization = {
+                'Uygulayan': 'Uygulayanlar', #
+                'Onaylayan': 'Onaylayanlar',
+                'Tekrarlayan': 'Tekrarlayanlar',
+                'Onaylamayan': 'Onaylamayanlar',
+                'Etkilenmeyen': 'Etkilenmeyen'
+            }
+
+            interactor_tags = {item['entity']: {} for item in all_interactors}
+            for item in all_interactors:
+                tag = item['tag']
+                entity = item['entity']
+                if tag.startswith('EM'):
+                    interactor_tags[entity]['EM'] = tag
+                elif tag.startswith('UY'):
+                    interactor_tags[entity]['UY'] = tag
+                elif tag.startswith('TK'):
+                    interactor_tags[entity]['TK'] = tag
+                elif tag.startswith('OM'):
+                    interactor_tags[entity]['OM'] = tag
+                elif tag.startswith('OL'):
+                    interactor_tags[entity]['OL'] = tag
+
+            for entry in entries:
+                match = re.match(r"(\w+) '(.+?)' \d+ dönüşüm geçirdi: (.+)", entry) #
+                if not match:
+                    return False, f"Geçersiz altbilgi biçimi: '{entry}'.\nBeklenen: 'Tür 'varlık' N dönüşüm geçirdi: tag1->tag2'" #
+                
+                interactor_type, entity, transformation_chain = match.groups()
+                interactor_type = normalization.get(interactor_type, interactor_type)
+                key = f"{interactor_type}_{entity}"
+                if key not in interactor_lookup:
+                    return False, f"Altbilgi var olmayan etkileşene başvuruyor: {interactor_type} '{entity}'" #
+                
+                original_interactor = interactor_lookup[key][0] if interactor_lookup[key] else None
+                if not original_interactor:
+                    return False, f"Altbilgi için eşleşen etkileşen bulunamadı: {interactor_type} '{entity}'" #
+                
+                original_tag = original_interactor['tag']
+                
+                tags = [tag.strip() for tag in transformation_chain.split("->") if tag.strip()]
+                if not tags:
+                    return False, f"{interactor_type} '{entity}' için altbilgide boş dönüşüm bağaması" #
+                
+                if tags[0] == original_tag:
+                    validation_tags = tags[::-1]  
+                elif tags[-1] == original_tag:
+                    validation_tags = tags
+                else:
+                    return False, f"Altbilgi dönüşüm bağaması etkileşenin olan belirteçini ('{original_tag}') içermiyor.\nAlınan: {transformation_chain}" #
+                
+                for i in range(len(validation_tags) - 1):
+                    current_tag = validation_tags[i]
+                    next_tag = validation_tags[i + 1]
+                    
+                    valid_conversion = (current_tag in self.conversion_rules and next_tag in self.conversion_rules[current_tag])
+                    valid_transformation = (current_tag in self.transformation_rules and next_tag in self.transformation_rules[current_tag])
+                    
+                    if not (valid_conversion or valid_transformation):
+                        return False, f"{interactor_type} '{entity}' için altbilgide geçersiz dönüşüm {current_tag} -> {next_tag}" #
+                    
+                    if current_tag.startswith("TK"):
+                        return False, f"{interactor_type} '{entity}' için altbilgide Tekrarlayanlar (TK belirteçleri) dönüştürülemez" #
+                    
+                    if current_tag.startswith("EM") != next_tag.startswith("EM"):
+                        return False, f"EM ve EM olmayan türler arasında dönüşüm yapılamaz: {current_tag} -> {next_tag}" #
+
+                if interactor_type == "Onaylayanlar" and validation_tags[-1].startswith('OL'):
+                    final_ac_tag = validation_tags[-1]
+                    if final_ac_tag in self.ac_compat:
+                        compat_tags = self.ac_compat[final_ac_tag]
+                        ef_tag = interactor_tags.get(entity, {}).get('UY')
+                        rp_tag = interactor_tags.get(entity, {}).get('TK')
+                        compatible = False
+                        if ef_tag and ef_tag in compat_tags:
+                            compatible = True
+                        elif rp_tag and rp_tag in compat_tags:
+                            compatible = True
+                        if not compatible and (ef_tag or rp_tag):
+                            return False, f"'{entity}' için Onaylayan belirteçi '{final_ac_tag}', Uygulayan/Tekrarlayan belirteçi '{ef_tag or rp_tag}' ile uyumlu değil.\nUyumlu belirteçler: {', '.join(compat_tags)}" #
+
+                if interactor_type == "Etkilenmeyen" and validation_tags[-1].startswith('EM'):
+                    final_ni_tag = validation_tags[-1]
+                    if final_ni_tag not in self.valid_ni_tags:
+                        return False, f"'{entity}' için son Etkilenmeyen belirteçi '{final_ni_tag}' geçersiz.\nGeçerli EM belirteçleri: {', '.join(self.valid_ni_tags)}" #
+                    if final_ni_tag not in self.required_ini_tags and any(item['tag'] in self.required_ini_tags for item in all_interactors):
+                        return False, f"'{entity}' için Etkilenmeyen belirteçi '{final_ni_tag}', diğer gerekli etkilenen belirteçleri olan olduğunda gerekli bir etkilenen belirteçi olmalıdır.\nGerekli etkilenen belirteçleri: {', '.join(self.required_ini_tags)}" #
+
+            return True, ""
+            
+        except Exception as e:
+            return False, f"Altbilgi doğrulama yanlışlıkları: {str(e)}" #
+
+    def add_tab(self):
+        new_tab = ttk.Frame(self.tab_control)
+        tab_count = len(self.tab_control.tabs()) + 1
+        self.tab_control.add(new_tab, text=f"yazın/dizge {tab_count}") #
+        self.setup_tab(new_tab)
+
+    def add_set(self, tab, format_var, interlinked=False, linked_row_index=None, parent_set_id=None, interlinked_frame=None):
+        format_type = format_var.get()
+        if not format_type:
+            messagebox.showerror("yanlışlık", "bir toplam eklemeden önce toplam biçiminı seçin.") #
+            return
+
+        set_container = ttk.Frame(tab.sets_frame if not interlinked else interlinked_frame)
+        set_container.pack(side=tk.TOP if not interlinked else tk.LEFT, padx=10, pady=10, fill=tk.X)
+
+        # Kaynak Bilgi Çerçevesi
+        source_info_frame = ttk.Frame(set_container)
+        source_info_frame.pack(side=tk.LEFT, fill=tk.Y)
+        ttk.Label(source_info_frame, text="Kaynak Kimliği:").pack(anchor=tk.W) #
+        source_identity = ttk.Entry(source_info_frame, width=20)
+        source_identity.pack(anchor=tk.W, pady=2)
+        ttk.Label(source_info_frame, text="Genel töreli Kaynak:").pack(anchor=tk.W) #
+        general_moral_source = ttk.Combobox(source_info_frame, values=self.general_source_options, state="readonly", width=20)
+        general_moral_source.pack(anchor=tk.W, pady=2)
+        ttk.Label(source_info_frame, text="Kol Kaynak:").pack(anchor=tk.W) #
+        kol_kaynak_var = tk.StringVar(value="olumsuz") #
+        kol_kaynak = ttk.Combobox(source_info_frame, textvariable=kol_kaynak_var, values=["olumsuz", "olumlu"], state="readonly", width=20) #
+        kol_kaynak.pack(anchor=tk.W, pady=2)
+        kol_kaynak_entry = ttk.Entry(source_info_frame, width=20)
+
+        # Toplam Çerçevesi
+        set_frame = ttk.Frame(set_container)
+        set_frame.pack(side=tk.LEFT, fill=tk.X)
+        interlinked_frame = ttk.Frame(set_container)
+        interlinked_frame.pack(side=tk.LEFT, fill=tk.X)
+
+        # Dizi Odağı
+        ttk.Label(set_frame, text="Dizi Odağı:").pack(anchor=tk.W) #
+        series_focus = ttk.Entry(set_frame, width=30)
+        series_focus.pack(anchor=tk.W)
+
+        # Kaynak Konumu
+        ttk.Label(set_frame, text="Kaynak Konumu:").pack(anchor=tk.W) #
+        source_position_var = tk.StringVar(value="Üst") #
+        source_position = ttk.Combobox(set_frame, textvariable=source_position_var, values=["Üst", "Orta", "Alt", "Konumsuz"], state="readonly") #
+        source_position.pack(anchor=tk.W, pady=2)
+
+        ttk.Button(set_frame, text="Toplamı Sil", command=lambda: self.delete_set(set_container, tab)).pack(anchor=tk.W, pady=5) #
+
+        set_id = str(uuid.uuid4())
+        set_info = {
+            'set_id': set_id,
+            'tab': tab,
+            'container': set_container,
+            'source_info_frame': source_info_frame,
+            'interlinked_frame': interlinked_frame,
+            'frame': set_frame,
+            'source_identity': source_identity,
+            'general_moral_source': general_moral_source,
+            'kol_kaynak': kol_kaynak_var,
+            'kol_kaynak_entry': kol_kaynak_entry,
+            'series_focus': series_focus,
+            'source_position': source_position_var,
+            'rows': [],
+            'format': format_type,
+            'canvas': None,
+            'table_frame': None,
+            'linked_row_index': linked_row_index,
+            'parent_set_id': parent_set_id
+        }
+
+        self.sets.append(set_info)
+
+        if not interlinked:
+            add_interlinked_button = ttk.Button(source_info_frame, text="Bağlantılı Toplam Ekle", command=lambda sid=set_id, r=1: self.add_interlinked_set(tab, sid, r)) #
+            set_info['add_interlinked_button'] = add_interlinked_button
+            self.update_kol_kaynak_entry(set_info)
+        else:
+            set_info['add_interlinked_button'] = None
+
+        kol_kaynak.bind("<<ComboboxSelected>>", lambda event: self.update_kol_kaynak_entry(set_info))
+
+        ttk.Button(set_frame, text="törelmelik Bağma Ekle", command=lambda: self.add_moralithic_chain(tab, set_container)).pack(anchor=tk.W, pady=5) #
+
+        canvas_frame = ttk.Frame(set_frame)
+        canvas_frame.pack(fill=tk.BOTH, expand=True)
+        canvas = tk.Canvas(canvas_frame)
+        v_scrollbar = ttk.Scrollbar(canvas_frame, orient=tk.VERTICAL, command=canvas.yview)
+        h_scrollbar = ttk.Scrollbar(canvas_frame, orient=tk.HORIZONTAL, command=canvas.xview)
+        table_frame = ttk.Frame(canvas)
+        canvas.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+        canvas.create_window((0, 0), window=table_frame, anchor="nw")
+        v_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        h_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        set_info['canvas'] = canvas
+        set_info['table_frame'] = table_frame
+
+        columns = ["Ana Bağma", "Bağlantılı Bağmalar"] #
+        if format_type == "Sıralamalı": #
+            columns.insert(0, "Sıralamalı Sıra") #
+        elif format_type == "Aşamalı Sıralama": #
+            columns.append("Aşamalı Sıralama") #
+        elif format_type == "Sıralama ile Aşamalı Sıralama": #
+            columns.insert(0, "Sıralamalı Sıra") #
+            columns.append("Aşamalı Sıralama") #
+        for col, header in enumerate(columns):
+            ttk.Label(table_frame, text=header, font=("Arial", 10, "bold")).grid(row=0, column=col, padx=5, pady=5, sticky="w")
+
+        rows = []
+        for i in range(2):
+            row = []
+            col_offset = 0
+            if format_type in ["Sıralamalı", "Sıralama ile Aşamalı Sıralama"]: #
+                seq_rank = ttk.Entry(table_frame, width=5)
+                seq_rank.grid(row=i+1, column=col_offset, padx=5, pady=2, sticky="w")
+                row.append(seq_rank)
+                col_offset += 1
+            main_chain = ttk.Entry(table_frame, width=30)
+            main_chain.grid(row=i+1, column=col_offset, padx=5, pady=2, sticky="w")
+            row.append(main_chain)
+            interlinked_chains = [ttk.Entry(table_frame, width=30)]
+            interlinked_chains[0].grid(row=i+1, column=col_offset+1, padx=5, pady=2, sticky="w")
+            ttk.Button(table_frame, text="Bağlantılı Bağma Ekle", command=lambda r=row, c=canvas, f=table_frame, o=col_offset: self.add_interlinked_chain(r, c, f, o)).grid(row=i+1, column=col_offset+2, padx=5, pady=2, sticky="w") #
+            row.append(interlinked_chains)
+            if format_type in ["Aşamalı Sıralama", "Sıralama ile Aşamalı Sıralama"]: #
+                hier_rank = ttk.Entry(table_frame, width=5)
+                hier_rank.grid(row=i+1, column=col_offset+3, padx=5, pady=2, sticky="w")
+                row.append(hier_rank)
+            rows.append(row)
+        set_info['rows'] = rows
+
+        tab.sets_canvas.configure(scrollregion=tab.sets_canvas.bbox("all"))
+
+    def add_interlinked_set(self, tab, set_id, row_index):
+        set_info = next((s for s in self.sets if s['set_id'] == set_id), None)
+        if not set_info:
+            messagebox.showerror("yanlışlık", "Seçilen toplam bulunamadı.") #
+            return
+        self.add_set(tab, tab.format_var, interlinked=True, linked_row_index=row_index, parent_set_id=set_id, interlinked_frame=set_info['interlinked_frame'])
+
+    def add_interlinked_chain(self, row, canvas, table_frame, col_offset):
+        format_type = next(s for s in self.sets if s['canvas'] == canvas)['format']
+        interlinked_idx = 1 if format_type == "Aşamalı Sıralama" else 2 if format_type == "Sıralamalı" else 2 #
+        interlinked_chains = row[interlinked_idx]
+        if not isinstance(interlinked_chains, list):
+            interlinked_chains = [interlinked_chains] if isinstance(interlinked_chains, ttk.Entry) else []
+            row[interlinked_idx] = interlinked_chains
+        row_index = row[0].grid_info()['row'] if row[0].grid_info() else row[1].grid_info()['row']
+        add_button = None
+        for widget in table_frame.winfo_children():
+            grid_info = widget.grid_info()
+            if (isinstance(widget, ttk.Button) and 
+                grid_info.get('row') == row_index and 
+                widget.cget('text') == "Bağlantılı Bağma Ekle"): #
+                add_button = widget
+                break
+        new_chain = ttk.Entry(table_frame, width=30)
+        new_chain.grid(row=row_index, column=col_offset+1+len(interlinked_chains), padx=5, pady=2, sticky="w")
+        interlinked_chains.append(new_chain)
+        if add_button:
+            add_button.grid_forget()
+            add_button.grid(row=row_index, column=col_offset+1+len(interlinked_chains), padx=5, pady=2, sticky="w")
+        if format_type in ["Aşamalı Sıralama", "Sıralama ile Aşamalı Sıralama"]: #
+            hier_rank = row[-1]
+            hier_rank.grid_forget()
+            hier_rank.grid(row=row_index, column=col_offset+1+len(interlinked_chains)+1, padx=5, pady=2, sticky="w")
+            header_label = None
+            for widget in table_frame.winfo_children():
+                grid_info = widget.grid_info()
+                if (isinstance(widget, ttk.Label) and 
+                    grid_info.get('row') == 0 and 
+                    widget.cget('text') == "Aşamalı Sıralama"): #
+                    header_label = widget
+                    break
+            if header_label:
+                header_label.grid_forget()
+                header_label.grid(row=0, column=col_offset+1+len(interlinked_chains)+1, padx=5, pady=5, sticky="w")
+        canvas.update_idletasks()
+        canvas.configure(scrollregion=(0, 0, table_frame.winfo_reqwidth(), table_frame.winfo_reqheight()))
+        canvas.xview_moveto(0)
+        canvas_frame = canvas.winfo_parent()
+        canvas_frame_widget = canvas._nametowidget(canvas_frame)
+        canvas_frame_widget.configure(width=max(canvas_frame_widget.winfo_width(), table_frame.winfo_reqwidth()))
+
+    def add_moralithic_chain(self, tab, set_container):
+        set_info = next((s for s in self.sets if s['container'] == set_container), None)
+        if not set_info:
+            messagebox.showerror("yanlışlık", "Seçilen toplam bulunamadı.") #
+            return
+        table_frame = set_info['table_frame']
+        format_type = set_info['format']
+        canvas = set_info['canvas']
+        row_index = len(set_info['rows']) + 1
+        row = []
+        col_offset = 0
+        if format_type in ["Sıralamalı", "Sıralama ile Aşamalı Sıralama"]: #
+            seq_rank = ttk.Entry(table_frame, width=5)
+            seq_rank.grid(row=row_index, column=col_offset, padx=5, pady=2, sticky="w")
+            row.append(seq_rank)
+            col_offset += 1
+        main_chain = ttk.Entry(table_frame, width=30)
+        main_chain.grid(row=row_index, column=col_offset, padx=5, pady=2, sticky="w")
+        row.append(main_chain)
+        interlinked_chains = [ttk.Entry(table_frame, width=30)]
+        interlinked_chains[0].grid(row=row_index, column=col_offset+1, padx=5, pady=2, sticky="w")
+        ttk.Button(table_frame, text="Bağlantılı Bağma Ekle", command=lambda r=row, c=canvas, f=table_frame, o=col_offset: self.add_interlinked_chain(r, c, f, o)).grid(row=row_index, column=col_offset+2, padx=5, pady=2, sticky="w") #
+        row.append(interlinked_chains)
+        if format_type in ["Aşamalı Sıralama", "Sıralama ile Aşamalı Sıralama"]: #
+            hier_rank = ttk.Entry(table_frame, width=5)
+            hier_rank.grid(row=row_index, column=col_offset+3, padx=5, pady=2, sticky="w")
+            row.append(hier_rank)
+        set_info['rows'].append(row)
+        canvas.configure(scrollregion=canvas.bbox("all"))
+
+    def delete_set(self, set_container, tab):
+        set_info = next((s for s in self.sets if s['container'] == set_container), None)
+        if not set_info:
+            return
+        sets_to_remove = [s for s in self.sets if s['set_id'] == set_info['set_id'] or s['parent_set_id'] == set_info['set_id']]
+        for s in sets_to_remove:
+            s['container'].destroy()
+            self.sets.remove(s)
+        tab_sets = [s for s in self.sets if s.get('tab') == tab]
+        for set_info in tab_sets:
+            if set_info['parent_set_id'] is None:
+                set_info['container'].pack_forget()
+                set_info['container'].pack(side=tk.TOP, padx=10, pady=10, fill=tk.X)
+                interlinked_groups = {}
+                linked_sets = [s for s in self.sets if s['parent_set_id'] == set_info['set_id']]
+                for s in linked_sets:
+                    row_index = s['linked_row_index']
+                    if row_index not in interlinked_groups:
+                        interlinked_groups[row_index] = []
+                    interlinked_groups[row_index].append(s)
+                for row_index in interlinked_groups:
+                    for s in interlinked_groups[row_index]:
+                        s['container'].pack_forget()
+                        s['container'].pack(side=tk.LEFT, padx=10, pady=10, fill=tk.X)
+        tab.sets_canvas.configure(scrollregion=tab.sets_canvas.bbox("all"))
+
+    def save_sets(self):
+        output = {}
+        for tab_id in self.tab_control.tabs():
+            tab = next(t for t in self.tab_control.winfo_children() if str(t) == tab_id)
+            tab_name = self.tab_control.tab(tab_id, "text")
+            tab_sets = [s for s in self.sets if s.get('tab') == tab]
+            system_focus = tab.system_focus.get() or tab_name
+            interlinked_tabs = tab.interlinked_tabs.get()
+            tab_data = []
+            for set_info in tab_sets:
+                set_focus = set_info['series_focus'].get() or 'Yok'
+                set_data = {
+                    'set_id': set_info['set_id'],
+                    'source_identity': set_info['source_identity'].get(),
+                    'general_moral_source': set_info['general_moral_source'].get(),
+                    'kol_kaynak': set_info['kol_kaynak'].get(),
+                    'kol_kaynak_text': set_info['kol_kaynak_entry'].get() if set_info['kol_kaynak'].get() == "olumlu" else "", #
+                    'series_focus': set_info['series_focus'].get(),
+                    'source_position': set_info['source_position'].get(),
+                    'format': set_info['format'],
+                    'rows': [],
+                    'linked_row_index': set_info['linked_row_index'],
+                    'parent_set_id': set_info['parent_set_id']
+                }
+                for i, row in enumerate(set_info['rows']):
+                    interlinked_idx = 1 if set_info['format'] == "Aşamalı Sıralama" else 2 #
+                    interlinked_chains = row[interlinked_idx]
+                    if not isinstance(interlinked_chains, list):
+                        interlinked_chains = [interlinked_chains] if isinstance(interlinked_chains, ttk.Entry) else []
+                        row[interlinked_idx] = interlinked_chains
+                    row_data = {
+                        'row_id': str(uuid.uuid4()),
+                        'main_chain': row[1 if set_info['format'] == "Aşamalı Sıralama" else 1].get(), #
+                        'interlinked_chains': [chain.get() for chain in interlinked_chains if chain.get()]
+                    }
+                    if set_info['format'] in ["Sıralamalı", "Sıralama ile Aşamalı Sıralama"]: #
+                        row_data['sequential_rank'] = row[0].get()
+                    if set_info['format'] in ["Aşamalı Sıralama", "Sıralama ile Aşamalı Sıralama"]: #
+                        row_data['hierarchical_rank'] = row[-1].get()
+                    set_data['rows'].append(row_data)
+                tab_data.append(set_data)
+            output[system_focus] = {
+                'interlinked_tabs': interlinked_tabs,
+                'sets': tab_data
+            }
+        with open("moralithic_entity_sets.json", "w") as f:
+            json.dump(output, f, indent=2)
+        messagebox.showinfo("Başarılı", "Kaynak toplamları tutuldu") #
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = TorenmelikBagmaToplamiOnaylayicisi(root)
+    root.mainloop()

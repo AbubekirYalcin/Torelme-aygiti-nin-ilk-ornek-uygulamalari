@@ -1,0 +1,732 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+import re
+import uuid
+
+class TersTorenmelikBagmaKurucusu: #
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Ters törelmelik Bağma Kurucusu - Uygulama 4") #
+        self.valid_statement_source_pairs = {
+            'AT31': 'KN30', 'AT32': 'KN31', 'AT33': 'KN32', 'AT34': 'KN33', 'AT43': 'KN42',
+            'AT44': 'KN43', 'AT45': 'KN44', 'AT46': 'KN45', 'AT47': 'KN46', 'AT48': 'KN47',
+            'AT49': 'KN48', 'AT50': 'KN49', 'AT52': 'KN51', 'AT54': 'KN53', 'AT56': 'KN55',
+            'AT58': 'KN57', 'AT59': 'KN58', 'AT60': 'KN59', 'AT61': 'KN60', 'AT62': 'KN61',
+            'AT63': 'KN62', 'AT64': 'KN63', 'AT65': 'KN64', 'AT66': 'KN65', 'AT67': 'KN66',
+            'AT68': 'KN67', 'AT69': 'KN68', 'AT70': 'KN69', 'AT71': 'KN70', 'AT72': 'KN71',
+            'AT73': 'KN72', 'AT74': 'KN73'
+        } # [cite: 3882-3913]
+        self.valid_statement_value_pairs = {
+            'AT31': {'values': ['DR31'], 'required': 'DR31'},
+            'AT32': {'values': ['DR31', 'DR32'], 'required': 'DR32'},
+            'AT33': {'values': ['DR33'], 'required': 'DR33'},
+            'AT34': {'values': ['DR31', 'DR32', 'DR33', 'DR34'], 'required': 'DR34'},
+            'AT43': {'values': ['DR43'], 'required': 'DR43'},
+            'AT44': {'values': ['DR43', 'DR44'], 'required': 'DR44'},
+            'AT45': {'values': ['DR45'], 'required': 'DR45'},
+            'AT46': {'values': ['DR43', 'DR44', 'DR45', 'DR46'], 'required': 'DR46'},
+            'AT47': {'values': ['DR47'], 'required': 'DR47'},
+            'AT48': {'values': ['DR47', 'DR48'], 'required': 'DR48'},
+            'AT49': {'values': ['DR47', 'DR48', 'DR49'], 'required': 'DR49'},
+            'AT50': {'values': ['DR47', 'DR48', 'DR49', 'DR50'], 'required': 'DR50'},
+            'AT52': {'values': ['DR52'], 'required': 'DR52'},
+            'AT54': {'values': ['DR54'], 'required': 'DR54'},
+            'AT56': {'values': ['DR56'], 'required': 'DR56'},
+            'AT58': {'values': ['DR58'], 'required': 'DR58'},
+            'AT59': {'values': ['DR59'], 'required': 'DR59'},
+            'AT60': {'values': ['DR59', 'DR60'], 'required': 'DR60'},
+            'AT61': {'values': ['DR61'], 'required': 'DR61'},
+            'AT62': {'values': ['DR59', 'DR60', 'DR61', 'DR62'], 'required': 'DR62'},
+            'AT63': {'values': ['DR63'], 'required': 'DR63'},
+            'AT64': {'values': ['DR63', 'DR64'], 'required': 'DR64'},
+            'AT65': {'values': ['DR65'], 'required': 'DR65'},
+            'AT66': {'values': ['DR63', 'DR64', 'DR65', 'DR66'], 'required': 'DR66'},
+            'AT67': {'values': ['DR67'], 'required': 'DR67'},
+            'AT68': {'values': ['DR67', 'DR68'], 'required': 'DR68'},
+            'AT69': {'values': ['DR69'], 'required': 'DR69'},
+            'AT70': {'values': ['DR67', 'DR68', 'DR69', 'DR70'], 'required': 'DR70'},
+            'AT71': {'values': ['DR71'], 'required': 'DR71'},
+            'AT72': {'values': ['DR71', 'DR72'], 'required': 'DR72'},
+            'AT73': {'values': ['DR73'], 'required': 'DR73'},
+            'AT74': {'values': ['DR71', 'DR72', 'DR73', 'DR74'], 'required': 'DR74'}
+        } # [cite: 3882-3913]
+        self.valid_interaction_tags = (
+            [f"EM0{i}" for i in range(4, 8)] + #
+            [f"UY{i}" for i in range(32, 64)] + #
+            [f"TK0{i}" for i in range(4, 8)] + #
+            [f"OM{i:02d}" for i in range(8, 16)] + #
+            [f"OL{i:02d}" for i in range(8, 16)] #
+        )
+        self.valid_means_tags = ["UR02", "UR03"] #
+        self.valid_displayment_tags = ["GM02", "GM03"] #
+        self.valid_statement_tags = list(self.valid_statement_source_pairs.keys())
+        self.valid_source_tags = list(self.valid_statement_source_pairs.values())
+        self.valid_value_tags = sorted(set(sum([pair['values'] for pair in self.valid_statement_value_pairs.values()], [])))
+        self.value_tags = []
+        self.conversion_rules = {
+            'OL08': ['OM08', 'OM12'], 'OL09': ['OM09', 'OM13'], 'OL10': ['OM10', 'OM14'], 'OL11': ['OM11', 'OM15'],
+            'OL12': ['OM08', 'OM12'], 'OL13': ['OM09', 'OM13'], 'OL14': ['OM10', 'OM14'], 'OL15': ['OM11', 'OM15'],
+            'OM08': ['OL08', 'OL12'], 'OM09': ['OL09', 'OL13'], 'OM10': ['OL10', 'OL14'], 'OM11': ['OL11', 'OL15'],
+            'OM12': ['OL08', 'OL12'], 'OM13': ['OL09', 'OL13'], 'OM14': ['OL10', 'OL14'], 'OM15': ['OL11', 'OL15']
+        } # [cite: 3953-3969]
+        self.transformation_rules = {
+            'EM04': ['EM06'], 'EM05': ['EM07'], 'EM06': ['EM04'], 'EM07': ['EM05'],
+            'UY32': ['UY34', 'UY36', 'UY38'], 'UY33': ['UY35', 'UY37', 'UY39'], 'UY34': ['UY32', 'UY36', 'UY38'],
+            'UY35': ['UY33', 'UY37', 'UY39'], 'UY36': ['UY32', 'UY34', 'UY38'], 'UY37': ['UY33', 'UY35', 'UY39'],
+            'UY38': ['UY32', 'UY34', 'UY36'], 'UY39': ['UY33', 'UY35', 'UY37'], 'UY40': ['UY42', 'UY44', 'UY46'],
+            'UY41': ['UY43', 'UY45', 'UY47'], 'UY42': ['UY40', 'UY44', 'UY46'], 'UY43': ['UY41', 'UY45', 'UY47'],
+            'UY44': ['UY40', 'UY42', 'UY46'], 'UY45': ['UY41', 'UY43', 'UY47'], 'UY46': ['UY40', 'UY42', 'UY44'],
+            'UY47': ['UY41', 'UY43', 'UY45'], 'UY48': ['UY50', 'UY52', 'UY54'], 'UY49': ['UY51', 'UY53', 'UY55'],
+            'UY50': ['UY48', 'UY52', 'UY54'], 'UY51': ['UY49', 'UY53', 'UY55'], 'UY52': ['UY48', 'UY50', 'UY54'],
+            'UY53': ['UY49', 'UY51', 'UY55'], 'UY54': ['UY48', 'UY50', 'UY52'], 'UY55': ['UY49', 'UY51', 'UY53'],
+            'UY56': ['UY58', 'UY60', 'UY62'], 'UY57': ['UY59', 'UY61', 'UY63'], 'UY58': ['UY56', 'UY60', 'UY62'],
+            'UY59': ['UY57', 'UY61', 'UY63'], 'UY60': ['UY56', 'UY58', 'UY62'], 'UY61': ['UY57', 'UY59', 'UY63'],
+            'UY62': ['UY56', 'UY58', 'UY60'], 'UY63': ['UY57', 'UY59', 'UY61'],
+            'OM08': ['OM12'], 'OM09': ['OM13'], 'OM10': ['OM14'], 'OM11': ['OM15'],
+            'OM12': ['OM08'], 'OM13': ['OM09'], 'OM14': ['OM10'], 'OM15': ['OM11'],
+            'OL08': ['OL12'], 'OL09': ['OL13'], 'OL10': ['OL14'], 'OL11': ['OL15'],
+            'OL12': ['OL08'], 'OL13': ['OL09'], 'OL14': ['OL10'], 'OL15': ['OL11'],
+            'TK04': [], 'TK05': [], 'TK06': [], 'TK07': []
+        } # [cite: 3974-4033]
+        # İleri dönüşüm kuralları
+        self.forward_conversion_rules = {}
+        for current_tag, prev_list in self.conversion_rules.items():
+            for prev_tag in prev_list:
+                if prev_tag not in self.forward_conversion_rules:
+                    self.forward_conversion_rules[prev_tag] = []
+                self.forward_conversion_rules[prev_tag].append(current_tag)
+        self.forward_transformation_rules = {}
+        for current_tag, prev_list in self.transformation_rules.items():
+            for prev_tag in prev_list:
+                if prev_tag not in self.forward_transformation_rules:
+                    self.forward_transformation_rules[prev_tag] = []
+                self.forward_transformation_rules[prev_tag].append(current_tag)
+        self.transformations = []  # Dönüşümleri saklamak için
+        self.chain_text = ""
+        self.interaction_tag_value = ""  # Başlangıç etkileşim belirteçini saklamak için
+        self.current_tag = ""  # Dönüşüm bağamasındakı en son belirteçi izlemek için
+        self.setup_gui()
+
+    def setup_gui(self):
+        canvas_frame = ttk.Frame(self.root)
+        canvas_frame.pack(fill=tk.BOTH, expand=True)
+        self.canvas = tk.Canvas(canvas_frame)
+        v_scrollbar = ttk.Scrollbar(canvas_frame, orient=tk.VERTICAL, command=self.canvas.yview)
+        h_scrollbar = ttk.Scrollbar(canvas_frame, orient=tk.HORIZONTAL, command=self.canvas.xview)
+        self.main_frame = ttk.Frame(self.canvas)
+        self.canvas.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+        self.canvas.create_window((0, 0), window=self.main_frame, anchor="nw")
+        v_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        h_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
+        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        self.main_frame.bind("<Configure>", self._update_scrollregion)
+
+        self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+        self.canvas.bind_all("<Button-4>", self._on_mousewheel)
+        self.canvas.bind_all("<Button-5>", self._on_mousewheel)
+
+        ttk.Label(self.main_frame, text="1. Söz konusu töreli anlatım nedir?").pack(anchor=tk.W) #
+        self.statement_text = tk.Text(self.main_frame, height=3, width=50)
+        self.statement_text.pack(anchor=tk.W, pady=2)
+        self.statement_text.tag_configure("values", foreground="red")
+        self.statement_text.tag_configure("parts", foreground="blue")
+        self.statement_text.tag_configure("limits", foreground="green")
+        ttk.Label(self.main_frame, text="töreli Anlatım törelmelik Belirteçi:").pack(anchor=tk.W) #
+        self.statement_tag = ttk.Combobox(self.main_frame, values=self.valid_statement_tags, state="readonly")
+        self.statement_tag.pack(anchor=tk.W, pady=5)
+        self.statement_tag.bind("<<ComboboxSelected>>", self.update_value_comboboxes)
+
+        ttk.Label(self.main_frame, text="2. Söz konusu anlatımın töreli değerleri nelerdir?").pack(anchor=tk.W) #
+        self.values_input = ttk.Entry(self.main_frame, width=50)
+        self.values_input.pack(anchor=tk.W, pady=2)
+        ttk.Button(self.main_frame, text="töreli Değerleri ve törelmelik Belirteçleri Ekle", command=self.add_value_tag).pack(anchor=tk.W, pady=5) #
+        self.values_frame = ttk.Frame(self.main_frame)
+        self.values_frame.pack(anchor=tk.W, pady=2)
+        ttk.Label(self.main_frame, text="töreli Değerler (örneğin):").pack(anchor=tk.W) #
+        self.values_text = tk.Text(self.main_frame, height=3, width=50)
+        self.values_text.pack(anchor=tk.W, pady=2)
+
+        ttk.Label(self.main_frame, text="Gerekli Kesımler (Kesme ayrılımı):").pack(anchor=tk.W) #
+        self.parts_input = ttk.Entry(self.main_frame, width=50)
+        self.parts_input.pack(anchor=tk.W, pady=2)
+        ttk.Button(self.main_frame, text="Gerekli Kesımlerı Ekle", command=self.add_parts).pack(anchor=tk.W, pady=5) #
+        self.parts_frame = ttk.Frame(self.main_frame)
+        self.parts_frame.pack(anchor=tk.W, pady=2)
+        ttk.Label(self.main_frame, text="Gerekli Kesımler (örneğin):").pack(anchor=tk.W) #
+        self.parts_text = tk.Text(self.main_frame, height=3, width=50)
+        self.parts_text.pack(anchor=tk.W, pady=2)
+
+        ttk.Label(self.main_frame, text="Sınırlamalar (seçimli, Kesme ayrılımı):").pack(anchor=tk.W) #
+        self.limits_input = ttk.Entry(self.main_frame, width=50)
+        self.limits_input.pack(anchor=tk.W, pady=2)
+        ttk.Button(self.main_frame, text="Sınırlamaları Ekle", command=self.add_limits).pack(anchor=tk.W, pady=5) #
+        self.limits_frame = ttk.Frame(self.main_frame)
+        self.limits_frame.pack(anchor=tk.W, pady=2)
+        ttk.Label(self.main_frame, text="Sınırlamalar (örneğin):").pack(anchor=tk.W) #
+        self.limits_text = tk.Text(self.main_frame, height=3, width=50)
+        self.limits_text.pack(anchor=tk.W, pady=5)
+
+        self.values_text.bind("<KeyRelease>", self.update_statement_colors)
+        self.parts_text.bind("<KeyRelease>", self.update_statement_colors)
+        self.limits_text.bind("<KeyRelease>", self.update_statement_colors)
+
+        ttk.Label(self.main_frame, text="3. Anlatımın kaynağı nedir?").pack(anchor=tk.W) #
+        self.source_text = ttk.Entry(self.main_frame, width=50)
+        self.source_text.pack(anchor=tk.W, pady=2)
+        ttk.Label(self.main_frame, text="Kaynak törelmelik Belirteçi:").pack(anchor=tk.W) #
+        self.source_tag = ttk.Combobox(self.main_frame, values=self.valid_source_tags, state="readonly")
+        self.source_tag.pack(anchor=tk.W, pady=5)
+
+        ttk.Label(self.main_frame, text="4. Anlatımı kaynaklamak için hangi gösterim kullanıldı?").pack(anchor=tk.W) #
+        self.displayment_text = ttk.Entry(self.main_frame, width=50)
+        self.displayment_text.pack(anchor=tk.W, pady=2)
+        ttk.Label(self.main_frame, text="Gösterim törelmelik Belirteçi:").pack(anchor=tk.W) #
+        self.displayment_tag = ttk.Combobox(self.main_frame, values=self.valid_displayment_tags, state="readonly")
+        self.displayment_tag.pack(anchor=tk.W, pady=5)
+
+        ttk.Label(self.main_frame, text="5. Etkilenen/etkilenmeyen törelmelik belirteçi nedir?").pack(anchor=tk.W) #
+        self.interaction_tag = ttk.Combobox(self.main_frame, values=sorted(self.valid_interaction_tags), state="readonly")
+        self.interaction_tag.pack(anchor=tk.W, pady=2)
+
+        self.means_frame = ttk.Frame(self.main_frame)
+        ttk.Label(self.means_frame, text="Uyguraçları (Uygulayanlar için):").pack(anchor=tk.W) #
+        self.means_text = ttk.Entry(self.means_frame, width=50)
+        self.means_text.pack(anchor=tk.W, pady=2)
+        ttk.Label(self.means_frame, text="Uyguraç törelmelik Belirteçi:").pack(anchor=tk.W) #
+        self.means_tag = ttk.Combobox(self.main_frame, values=self.valid_means_tags, state="readonly")
+        self.means_tag.pack(anchor=tk.W, pady=2)
+
+        self.repeater_displayment_frame = ttk.Frame(self.main_frame)
+        ttk.Label(self.repeater_displayment_frame, text="Gösterim (Tekrarlayanlar için):").pack(anchor=tk.W) #
+        self.repeater_displayment_text = ttk.Entry(self.repeater_displayment_frame, width=50)
+        self.repeater_displayment_text.pack(anchor=tk.W, pady=2)
+        ttk.Label(self.repeater_displayment_frame, text="Tekrarlayan Gösterim törelmelik Belirteçi:").pack(anchor=tk.W) #
+        self.repeater_displayment_tag = ttk.Combobox(self.main_frame, values=self.valid_displayment_tags, state="readonly")
+        self.repeater_displayment_tag.pack(anchor=tk.W, pady=2)
+
+        ttk.Label(self.main_frame, text="Varlık Kimliği:").pack(anchor=tk.W) #
+        self.entity_text = ttk.Entry(self.main_frame, width=50)
+        self.entity_text.pack(anchor=tk.W, pady=5)
+
+        self.interaction_tag.bind("<<ComboboxSelected>>", lambda e: [self.update_means_visibility(e), self.update_repeater_displayment_visibility(e)])
+
+        self.update_means_visibility()
+        self.update_repeater_displayment_visibility()
+
+        ttk.Button(self.main_frame, text="Ters törelmelik Bağma Oluştur", command=self.generate_chain).pack(anchor=tk.W, pady=10) #
+        self.result_text = tk.Text(self.main_frame, height=5, width=70)
+        self.result_text.pack(anchor=tk.W, pady=5)
+        self.result_text.tag_configure("values", foreground="red")
+        self.result_text.tag_configure("parts", foreground="blue")
+        self.result_text.tag_configure("limits", foreground="green")
+        self.result_text.tag_configure("bold", font=("TkDefaultFont", 9, "bold"))
+
+        ttk.Label(self.main_frame, text="Oluşturulan Bağmaya Altbilgi Ekle:", font=("TkDefaultFont", 9, "bold")).pack(anchor=tk.W, pady=10) #
+        self.footnote_container = ttk.Frame(self.main_frame)
+        self.footnote_container.pack(anchor=tk.W, pady=5, fill=tk.X)
+
+        ttk.Button(self.main_frame, text="Bağmayı tut", command=self.copy_chain).pack(anchor=tk.W, pady=5) #
+
+    def update_value_comboboxes(self, event=None):
+        statement_tag = self.statement_tag.get()
+        if statement_tag in self.valid_statement_value_pairs:
+            valid_values = self.valid_statement_value_pairs[statement_tag]['values']
+            for _, tag in self.value_tags:
+                tag.configure(values=valid_values)
+                if tag.get() not in valid_values:
+                    tag.set('')
+
+    def update_repeater_displayment_visibility(self, event=None):
+        if self.interaction_tag.get().startswith("TK"): #
+            self.repeater_displayment_frame.pack(anchor=tk.W, pady=2)
+            self.repeater_displayment_tag.pack(anchor=tk.W, pady=2)
+        else:
+            self.repeater_displayment_frame.pack_forget()
+            self.repeater_displayment_tag.pack_forget()
+
+    def _update_scrollregion(self, event):
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def _on_mousewheel(self, event):
+        if event.delta:
+            self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        elif event.num == 4:
+            self.canvas.yview_scroll(-1, "units")
+        elif event.num == 5:
+            self.canvas.yview_scroll(1, "units")
+
+    def update_means_visibility(self, event=None):
+        if self.interaction_tag.get().startswith("UY"): #
+            self.means_frame.pack(anchor=tk.W, pady=2)
+            self.means_tag.pack(anchor=tk.W, pady=2)
+        else:
+            self.means_frame.pack_forget()
+            self.means_tag.pack_forget()
+
+    def copy_chain(self):
+        try:
+            chain_text = self.result_text.get("1.0", tk.END).strip()
+            if not chain_text:
+                messagebox.showwarning("Uyarı", "tutulanacak bağma yok. bir bağma oluşturun.") #
+                return
+            self.root.clipboard_clear()
+            self.root.clipboard_append(chain_text)
+            self.root.update()
+            messagebox.showinfo("Başarılı", "Bağma tutuldu!") #
+        except Exception as e:
+            messagebox.showerror("yanlışlık", f"Bağma tutuldu: {str(e)}") #
+
+    def add_value_tag(self):
+        try:
+            values = self.values_input.get().strip()
+            if not values:
+                messagebox.showerror("yanlışlık", "belirteç eklemeden önce değerleri verin.") #
+                return
+            value_list = [v.strip() for v in values.split(",") if v.strip()]
+            if not value_list:
+                messagebox.showerror("yanlışlık", "Geçerli değer sağlanmadı.") #
+                return
+            if len(value_list) < 1:
+                messagebox.showerror("yanlışlık", "bir yoksa bir artı bir değer gereklidir.") #
+                return
+
+            statement_tag = self.statement_tag.get()
+            if not statement_tag:
+                messagebox.showerror("yanlışlık", "değer eklemeden önce bir anlatım belirteçi seçin.") #
+                return
+
+            valid_values = self.valid_statement_value_pairs.get(statement_tag, {'values': [], 'required': None})['values']
+            required_value = self.valid_statement_value_pairs.get(statement_tag, {'values': [], 'required': None})['required']
+
+            for widget in self.values_frame.winfo_children():
+                widget.destroy()
+            self.value_tags.clear()
+
+            for i, value in enumerate(value_list, 1):
+                frame = ttk.Frame(self.values_frame)
+                frame.pack(anchor=tk.W, pady=2)
+                ttk.Label(frame, text=f"Değer {i}: {value}").pack(side=tk.LEFT) #
+                tag = ttk.Combobox(frame, values=valid_values, state="readonly", width=10)
+                tag.pack(side=tk.LEFT, padx=5)
+                self.value_tags.append((value, tag))
+
+            self.values_text.delete("1.0", tk.END)
+            self.values_text.insert("1.0", ", ".join(f"{i}. {v}" for i, v in enumerate(value_list, 1)))
+            self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+            self.update_statement_colors()
+        except Exception as e:
+            messagebox.showerror("yanlışlık", f"töreli değerler eklenemedi: {str(e)}") #
+
+    def add_parts(self):
+        try:
+            parts = self.parts_input.get().strip()
+            if not parts:
+                messagebox.showerror("yanlışlık", "eklemeden önce gerekli Kesımlerı verin.") #
+                return
+            parts_list = [p.strip() for p in parts.split(",") if p.strip()]
+            if not parts_list:
+                messagebox.showerror("yanlışlık", "Geçerli gerekli Kesımler sağlanmadı.") #
+                return
+
+            for widget in self.parts_frame.winfo_children():
+                widget.destroy()
+
+            for i, part in enumerate(parts_list, 1):
+                frame = ttk.Frame(self.parts_frame)
+                frame.pack(anchor=tk.W, pady=2)
+                ttk.Label(frame, text=f"Kesım {i}: {part}").pack(side=tk.LEFT) #
+
+            self.parts_text.delete("1.0", tk.END)
+            self.parts_text.insert("1.0", ", ".join(f"{i}. {p}" for i, p in enumerate(parts_list, 1)))
+            self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+            self.update_statement_colors()
+        except Exception as e:
+            messagebox.showerror("yanlışlık", f"Kesımler eklenemedi: {str(e)}") #
+
+    def add_limits(self):
+        try:
+            limits = self.limits_input.get().strip()
+            if not limits:
+                return
+
+            limits_list = [l.strip() for l in limits.split(",") if l.strip()]
+            if not limits_list:
+                return
+
+            for widget in self.limits_frame.winfo_children():
+                widget.destroy()
+
+            for i, limit in enumerate(limits_list, 1):
+                frame = ttk.Frame(self.limits_frame)
+                frame.pack(anchor=tk.W, pady=2)
+                ttk.Label(frame, text=f"Sınırlama {i}: {limit}").pack(side=tk.LEFT) #
+
+            self.limits_text.delete("1.0", tk.END)
+            self.limits_text.insert("1.0", ", ".join(f"{i}. {l}" for i, l in enumerate(limits_list, 1)))
+            self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+            self.update_statement_colors()
+        except Exception as e:
+            messagebox.showerror("yanlışlık", f"Sınırlamalar eklenemedi: {str(e)}") #
+
+    def update_statement_colors(self, event=None):
+        try:
+            statement = self.statement_text.get("1.0", tk.END).strip()
+            values = self.values_text.get("1.0", tk.END).strip()
+            parts = self.parts_text.get("1.0", tk.END).strip()
+            limits = self.limits_text.get("1.0", tk.END).strip()
+
+            self.statement_text.tag_remove("values", "1.0", tk.END)
+            self.statement_text.tag_remove("parts", "1.0", tk.END)
+            self.statement_text.tag_remove("limits", "1.0", tk.END)
+
+            value_list = [v.strip() for v in values.split(",") if v.strip()]
+            value_list = [re.sub(r'^\s*[0-9]+\.\s*', '', v).strip() for v in value_list]
+            parts_list = [p.strip() for p in parts.split(",") if p.strip()]
+            parts_list = [re.sub(r'^\s*[0-9]+\.\s*', '', p).strip() for p in parts_list]
+            limits_list = [l.strip() for l in limits.split(",") if l.strip()]
+            limits_list = [re.sub(r'^\s*[0-9]+\.\s*', '', l).strip() for l in limits_list]
+
+            components = [(v, "values") for v in value_list] + [(p, "parts") for p in parts_list] + [(l, "limits") for l in limits_list]
+
+            component_positions = []
+            for comp, tag in components:
+                start = statement.find(comp)
+                if start != -1:
+                    component_positions.append((start, start + len(comp), comp, tag))
+            component_positions.sort()
+
+            for start, end, comp, tag in component_positions:
+                self.statement_text.tag_add(tag, f"1.0+{start}c", f"1.0+{start + len(comp)}c")
+            return component_positions
+        except Exception as e:
+            self.result_text.configure(state="normal")
+            self.result_text.delete("1.0", tk.END)
+            self.result_text.insert("1.0", f"Bileşenleri boyalamadırmada yanlış: {str(e)}") #
+            self.result_text.configure(state="disabled")
+            return []
+
+    def validate_chain(self, interaction_tag, displayment_tag, means_tag, statement_tag, source_tag, value_list, parts_list, limits_list, value_tags, repeater_displayment_tag=None):
+        try:
+            if interaction_tag not in self.valid_interaction_tags:
+                return False, f"Geçersiz etkileşim belirteçi.\nŞunlardan biri olmalı: {', '.join(self.valid_interaction_tags)}." #
+
+            if interaction_tag.startswith("UY"): #
+                if not means_tag:
+                    return False, "Uygulayan etkileşim belirteçleri için Uyguraç belirteçi gereklidir." #
+                if means_tag not in self.valid_means_tags:
+                    return False, f"Geçersiz uyguraç belirteçi.\nŞunlardan biri olmalı: {', '.join(self.valid_means_tags)}." #
+
+            if interaction_tag.startswith("TK"): #
+                if not repeater_displayment_tag:
+                    return False, "Tekrarlayan etkileşim belirteçleri için Gösterim belirteçi gereklidir." #
+                if repeater_displayment_tag not in self.valid_displayment_tags:
+                    return False, f"Geçersiz tekrarlayan gösterim belirteçi.\nŞunlardan biri olmalı: {', '.join(self.valid_displayment_tags)}." #
+
+            if displayment_tag not in self.valid_displayment_tags:
+                return False, "Geçersiz gösterim belirteçi.\nSadece GM02 ve GM03'e izin verilir." #
+
+            if statement_tag not in self.valid_statement_source_pairs:
+                return False, f"Geçersiz anlatım belirteçi.\nŞunlardan biri olmalı: {', '.join(self.valid_statement_source_pairs.keys())}." #
+            if source_tag not in self.valid_statement_source_pairs.values():
+                return False, f"Geçersiz kaynak belirteçi.\nŞunlardan biri olmalı: {', '.join(self.valid_statement_source_pairs.values())}." #
+            if self.valid_statement_source_pairs.get(statement_tag) != source_tag:
+                return False, "Uyumsuz anlatım ve kaynak belirteçleri." #
+
+            if len(value_list) < 1:
+                return False, "bir yoksa bir artı bir değer gereklidir." #
+            if len(parts_list) < 1:
+                return False, "bir yoksa bir artı bir gerekli Kesım gereklidir." #
+
+            if len(value_list) != len(value_tags):
+                return False, f"Değerler ({len(value_list)}) ve değer belirteçleri ({len(value_tags)}) arasında uyumsuzluk." #
+
+            missing_tags = [f"Değer {i+1}: '{value}'" for i, (value, tag) in enumerate(self.value_tags) if not tag.get()] #
+            if missing_tags:
+                return False, f"Aşağıdaki değerler için eksik törelmelik belirteçleri:\n" + "\n".join(f"- {mt}" for mt in missing_tags) #
+
+            valid_values = self.valid_statement_value_pairs.get(statement_tag, {'values': [], 'required': None})['values']
+            required_value = self.valid_statement_value_pairs.get(statement_tag, {'values': [], 'required': None})['required']
+
+            for v in value_tags:
+                if v not in valid_values:
+                    return False, f"'{statement_tag}' anlatım belirteçi için geçersiz değer belirteçi '{v}'.\nŞunlardan biri olmalı: {', '.join(valid_values)}." #
+
+            if required_value and required_value not in value_tags:
+                return False, f"'{statement_tag}' anlatım belirteçi için gerekli değer belirteçi '{required_value}' eksik." #
+
+            statement = self.statement_text.get("1.0", tk.END).strip()
+            components = [(v, "Değer") for v in value_list] + [(p, "Gerekli Kesım") for p in parts_list] + [(l, "Sınırlama") for l in limits_list] #
+            error_msg = []
+            component_positions = []
+            for comp, comp_type in components:
+                start = statement.find(comp)
+                if start == -1:
+                    error_msg.append(f"{comp_type} '{comp}' anlatımda bulunamadı.") #
+                else:
+                    component_positions.append((start, start + len(comp), comp, comp_type))
+            component_positions.sort()
+
+            current_pos = 0
+            for i, (start, end, comp, comp_type) in enumerate(component_positions, 1):
+                if start < current_pos:
+                    error_msg.append(f"{comp_type} '{comp}' {start} yerindeki önceki bileşenlerle çakışıyor.") #
+                current_pos = max(current_pos, end)
+
+            if error_msg:
+                error_msg.insert(0, "Bileşen sıralama yanlışlığı: Bileşenler çakışmadan sırayla görünmelidir.") #
+                return False, "\n".join(error_msg)
+
+            return True, ""
+        except Exception as e:
+            return False, f"Doğrulama yanlışlığı: {str(e)}" #
+
+    def generate_chain(self):
+        try:
+            statement = self.statement_text.get("1.0", tk.END).strip()
+            statement_tag = self.statement_tag.get()
+            source = self.source_text.get().strip()
+            source_tag = self.source_tag.get()
+            displayment = self.displayment_text.get().strip()
+            displayment_tag = self.displayment_tag.get()
+            interaction_tag = self.interaction_tag.get()
+            means = self.means_text.get().strip()
+            means_tag = self.means_tag.get()
+            repeater_displayment = self.repeater_displayment_text.get().strip() if hasattr(self, 'repeater_displayment_text') else ''
+            repeater_displayment_tag = self.repeater_displayment_tag.get() if hasattr(self, 'repeater_displayment_tag') else ''
+            entity = self.entity_text.get().strip()
+
+            if not (statement and statement_tag and source and source_tag and interaction_tag and entity):
+                error = "Tüm alanlar doldurulmalıdır." #
+                self.result_text.configure(state="normal")
+                self.result_text.delete("1.0", tk.END)
+                self.result_text.insert("1.0", f"yanlışlık: {error}") #
+                self.result_text.configure(state="disabled")
+                return
+
+            if interaction_tag.startswith("UY") and not (means and means_tag): #
+                error = "Uygulayan etkileşim belirteçleri için Uyguraçlar ve Uyguraç belirteçi gereklidir." #
+                self.result_text.configure(state="normal")
+                self.result_text.delete("1.0", tk.END)
+                self.result_text.insert("1.0", f"yanlışlık: {error}") #
+                self.result_text.configure(state="disabled")
+                return
+
+            if interaction_tag.startswith("TK") and not (repeater_displayment and repeater_displayment_tag): #
+                error = "Tekrarlayan etkileşim belirteçleri için Gösterim ve Gösterim belirteçi gereklidir." #
+                self.result_text.configure(state="normal")
+                self.result_text.delete("1.0", tk.END)
+                self.result_text.insert("1.0", f"yanlışlık: {error}") #
+                self.result_text.configure(state="disabled")
+                return
+
+            values_text = self.values_text.get("1.0", tk.END).strip()
+            parts_text = self.parts_text.get("1.0", tk.END).strip()
+            limits_text = self.limits_text.get("1.0", tk.END).strip()
+            value_list = [v.strip() for v in values_text.split(",") if v.strip()]
+            value_list = [re.sub(r'^\s*[0-9]+\.\s*', '', v).strip() for v in value_list]
+            parts_list = [p.strip() for p in parts_text.split(",") if p.strip()]
+            parts_list = [re.sub(r'^\s*[0-9]+\.\s*', '', p).strip() for p in parts_list]
+            limits_list = [l.strip() for l in limits_text.split(",") if l.strip()]
+            limits_list = [re.sub(r'^\s*[0-9]+\.\s*', '', l).strip() for l in limits_list]
+            value_tags = [tag.get() for _, tag in self.value_tags if tag.get()]
+
+            if len(value_list) != len(value_tags):
+                error = f"Değerler ({len(value_list)}) ve seçilen belirteçler ({len(value_tags)}) arasında uyumsuzluk.\n tüm değerler için bir belirteç seçin." #
+                self.result_text.configure(state="normal")
+                self.result_text.delete("1.0", tk.END)
+                self.result_text.insert("1.0", f"yanlışlık: {error}") #
+                self.result_text.configure(state="disabled")
+                return
+
+            valid, error = self.validate_chain(interaction_tag, displayment_tag, means_tag, statement_tag, source_tag, value_list, parts_list, limits_list, value_tags, repeater_displayment_tag)
+            if not valid:
+                self.result_text.configure(state="normal")
+                self.result_text.delete("1.0", tk.END)
+                self.result_text.insert("1.0", f"yanlışlık: {error}") #
+                self.result_text.configure(state="disabled")
+                return
+
+            component_positions = self.update_statement_colors()
+
+            values_str = "töreli Değerler [" + ", ".join( #
+                f"{i+1}. {value} ({value_tags[i]})"
+                for i, value in enumerate(value_list)
+            ) + "]"
+
+            if interaction_tag.startswith("OL"): #
+                interactor_type = "Onaylayan" #
+            elif interaction_tag.startswith("EM"): #
+                interactor_type = "Etkilenmeyen" #
+            elif interaction_tag.startswith("UY"): #
+                interactor_type = "Uygulayan" #
+            elif interaction_tag.startswith("TK"): #
+                interactor_type = "Tekrarlayan" #
+            elif interaction_tag.startswith("OM"): #
+                interactor_type = "Onaylamayan" #
+            else:
+                interactor_type = "Etkileşen" #
+
+            keywords = [interactor_type, "Gösterimler", "töreli Değerler", "töreli anlatım", "töreli kaynak"] #
+
+            if interactor_type == "Uygulayan": #
+                chain_prefix = (
+                    f"{interactor_type} [{entity} ({interaction_tag}), Uyguraçları ({means} ({means_tag}))]-" #
+                    f"Gösterimler [{displayment} ({displayment_tag})]-" #
+                    f"{values_str}-töreli anlatım [" #
+                )
+                keywords.append("Uyguraçları") #
+            elif interactor_type == "Tekrarlayan": #
+                chain_prefix = (
+                    f"{interactor_type} [{entity} ({interaction_tag}), Gösterimler ({repeater_displayment} ({repeater_displayment_tag}))]-" #
+                    f"Gösterimler [{displayment} ({displayment_tag})]-" #
+                    f"{values_str}-töreli anlatım [" #
+                )
+                keywords.append("Gösterimler") #
+            else:
+                chain_prefix = (
+                    f"{interactor_type} [{entity} ({interaction_tag})]-"
+                    f"Gösterimler [{displayment} ({displayment_tag})]-" #
+                    f"{values_str}-töreli anlatım [" #
+                )
+
+            chain_suffix = f" ({statement_tag})]-töreli kaynak [{source} ({source_tag})]" #
+
+            self.chain_text = f"{chain_prefix}{statement}{chain_suffix}"
+
+            self.result_text.configure(state="normal")
+            self.result_text.delete("1.0", tk.END)
+            self.result_text.insert("1.0", f"{chain_prefix}")
+            statement_start = len(f"{chain_prefix}")
+            self.result_text.insert(tk.END, statement)
+            statement_end = statement_start + len(statement)
+            self.result_text.insert(tk.END, chain_suffix)
+
+            for start, end, comp, tag in component_positions:
+                self.result_text.tag_add(tag, f"1.0+{statement_start + start}c", f"1.0+{statement_start + end}c")
+
+            chain_text = f"{chain_prefix}{statement}{chain_suffix}"
+            for keyword in keywords:
+                start = 0
+                while True:
+                    start = chain_text.find(keyword, start)
+                    if start == -1:
+                        break
+                    self.result_text.tag_add("bold", f"1.0+{start}c", f"1.0+{start + len(keyword)}c")
+                    start += len(keyword)
+
+            self.result_text.configure(state="disabled")
+
+            for widget in self.footnote_container.winfo_children():
+                widget.destroy()
+
+            self.transformations = []
+            self.interaction_tag_value = interaction_tag
+            self.current_tag = interaction_tag
+
+            if interaction_tag.startswith("TK"): #
+                messagebox.showinfo("Bilgi", "Tekrarlayanlar (TK belirteçleri) için dönüşüm olanaklı değil.") #
+            else:
+                self.add_footnote_frame(interaction_tag)
+
+            self.root.update_idletasks()
+
+        except Exception as e:
+            self.result_text.configure(state="normal")
+            self.result_text.delete("1.0", tk.END)
+            self.result_text.insert("1.0", f"yanlışlık: Beklenmeyen sorun oluştu: {str(e)}") #
+            self.result_text.configure(state="disabled")
+
+    def add_footnote_frame(self, tag):
+        frame = ttk.Frame(self.footnote_container)
+        frame.pack(anchor=tk.W, pady=5, fill=tk.X)
+        label_text = f"{tag} belirteçi için Dönüşüm Ekle:" #
+        ttk.Label(frame, text=label_text).pack(anchor=tk.W)
+        combobox = ttk.Combobox(frame, state="readonly", width=20)
+        combobox.pack(anchor=tk.W, pady=2)
+        valid_transformations = []
+        if tag in self.forward_conversion_rules:
+            valid_transformations.extend([f"{tag}->{next_tag}" for next_tag in self.forward_conversion_rules[tag]])
+        if tag in self.forward_transformation_rules:
+            valid_transformations.extend([f"{tag}->{next_tag}" for next_tag in self.forward_transformation_rules[tag]])
+        combobox['values'] = valid_transformations
+        combobox['state'] = 'readonly' if valid_transformations else 'disabled'
+        add_btn = ttk.Button(frame, text="Dönüşüm Ekle", command=lambda c=combobox: self.add_transformation(c)) #
+        add_btn.pack(anchor=tk.W, pady=5)
+        self.footnote_combobox = combobox
+        self.root.update_idletasks()
+
+    def add_transformation(self, combobox):
+        try:
+            transformation = combobox.get()
+            if not transformation:
+                messagebox.showerror("yanlışlık", "seçeneklerden bir dönüşüm seçin.") #
+                return
+            from_tag, to_tag = transformation.split("->")
+            valid, error = self.validate_transformation(from_tag, to_tag)
+            if not valid:
+                messagebox.showerror("yanlışlık", f"Geçersiz dönüşüm: {error}") #
+                return
+            self.transformations.append(transformation)
+            self.current_tag = to_tag
+            valid_transformations = []
+            if self.current_tag in self.forward_conversion_rules:
+                valid_transformations.extend([f"{self.current_tag}->{next_tag}" for next_tag in self.forward_conversion_rules[self.current_tag]])
+            if self.current_tag in self.forward_transformation_rules:
+                valid_transformations.extend([f"{self.current_tag}->{next_tag}" for next_tag in self.forward_transformation_rules[self.current_tag]])
+            combobox['values'] = valid_transformations
+            combobox.set('')
+            combobox['state'] = 'readonly' if valid_transformations else 'disabled'
+            self.update_chain_with_footnote()
+        except Exception as e:
+            messagebox.showerror("yanlışlık", f"Dönüşüm eklenemedi: {str(e)}") #
+
+    def update_chain_with_footnote(self):
+        try:
+            entity = self.entity_text.get().strip()
+            footnote = ""
+            if self.transformations:
+                chain_tags = [self.interaction_tag_value]
+                for trans in self.transformations:
+                    _, new_tag = trans.split("->")
+                    chain_tags.append(new_tag)
+                # Ters dönüşüm sırasını göstermek için chain_tags tersine çevir
+                chain_tags = chain_tags[::-1]
+                trans_str = "->".join(chain_tags)
+                footnote = f"\nAltbilgi: '{entity}' {len(self.transformations)} dönüşüm geçirdi: {trans_str}" #
+
+            self.result_text.configure(state="normal")
+            self.result_text.delete("1.0", tk.END)
+            self.result_text.insert("1.0", self.chain_text + footnote)
+
+            chain_text_with_footnote = self.chain_text + footnote
+            keywords = ["Onaylayan", "Etkilenmeyen", "Uygulayan", "Tekrarlayan", "Onaylamayan", "Etkileşen", 
+                        "Gösterimler", "töreli Değerler", "töreli anlatım", "töreli kaynak", "Uyguraçları"] #
+            for keyword in keywords:
+                start = 0
+                while True:
+                    start = chain_text_with_footnote.find(keyword, start)
+                    if start == -1:
+                        break
+                    self.result_text.tag_add("bold", f"1.0+{start}c", f"1.0+{start + len(keyword)}c")
+                    start += len(keyword)
+
+            self.result_text.configure(state="disabled")
+        except Exception as e:
+            messagebox.showerror("yanlışlık", f"Bağma altbilgi ile güncellenemedi: {str(e)}") #
+
+    def validate_transformation(self, from_tag, to_tag):
+        if from_tag.startswith("TK"): #
+            return False, "Tekrarlayanlar (TK belirteçleri) dönüştürülemez." #
+        if from_tag.startswith("EM") and not to_tag.startswith("EM"): #
+            return False, "EM belirteçleri EM olmayan türlere dönüştürülemez." #
+        if from_tag in self.forward_conversion_rules and to_tag in self.forward_conversion_rules[from_tag]:
+            return True, ""
+        if from_tag in self.forward_transformation_rules and to_tag in self.forward_transformation_rules[from_tag]:
+            return True, ""
+        return False, f"{to_tag}, {from_tag} belirteçinden dönüştürülemez.\n{from_tag} için olan dönüşümleri yeniden bakın." #
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = TersTorenmelikBagmaKurucusu(root)
+    root.mainloop()
